@@ -24,7 +24,7 @@ var SecondUrl = "https://api.open-meteo.com/v1/forecast"
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Gets the weather for a city",
-	Long:  `Gets the weather info for a city. (Can be used with --raw to get a json respons)`,
+	Long:  `Gets the weather info for a city. (Can be used with --raw to get a json response)`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var CityName = args[0]
 		if cmd.Flag("raw").Value.String() == "false" {
@@ -59,8 +59,6 @@ var getCmd = &cobra.Command{
 		var FetchedWindSpeed = forecastData["current_weather"].(map[string]interface{})["windspeed"]
 		var FetchedWindDirection = forecastData["current_weather"].(map[string]interface{})["winddirection"]
 		var FetchedWeathercode = forecastData["current_weather"].(map[string]interface{})["weathercode"]
-		fmt.Println(FetchedWeathercode)
-		fmt.Println(translateweathercode(fmt.Sprintf("%v", FetchedWeathercode)))
 		if cmd.Flag("raw").Value.String() == "true" {
 			jsn, err := json.Marshal(cityinfoData)
 			if err != nil {
@@ -107,7 +105,7 @@ func printer(Name interface{},
 	fmt.Printf("Longitude: %f\n", Longitude)
 	fmt.Printf("Timezone: %s\n", Timezone)
 	fmt.Printf("Population: %s (%v)\n", humanize.Comma(PopulationInt), PopulationFloat)
-	fmt.Println("\nWeather:")
+	fmt.Println("\nWeather Info:")
 	fmt.Printf("	Temperature: %.1f°\n", Temperature)
 	fmt.Printf("	Wind Direction: %.0f°\n", WindDirection)
 	fmt.Printf("	Wind Speed: %.1f Km/h\n", WindSpeed)
