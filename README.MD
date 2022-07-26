@@ -22,6 +22,7 @@
     * Wind Speed
     * Wind Direction
     * Weather Conditions
+    * Feels Like Temperature (Apparent temperature based on a combination of factors e.g. humidity, wind speed, solar radiation, wind chill and air pressure)
 * Raw JSON output
 
 
