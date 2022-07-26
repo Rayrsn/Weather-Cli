@@ -31,7 +31,6 @@ var getCmd = &cobra.Command{
 			fmt.Printf("Searching for city %s ...\n", strings.ToUpper(CityName[:1])+CityName[1:])
 		}
 		url := MainUrl + "?name=" + CityName + "&count=1"
-		fmt.Println(url)
 		resp, err := http.Get(url)
 		if err != nil {
 			log.Fatalln(err)
