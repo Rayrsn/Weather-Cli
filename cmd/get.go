@@ -27,8 +27,9 @@ var getCmd = &cobra.Command{
 	Long:  `Gets the weather info for a city. (Can be used with --raw to get a json respons)`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var CityName = args[0]
-		fmt.Println("get called")
-		fmt.Printf("Searching for city %s ...\n", strings.ToUpper(CityName[:1])+CityName[1:])
+		if cmd.Flag("raw").Value.String() == "false" {
+			fmt.Printf("Searching for city %s ...\n", strings.ToUpper(CityName[:1])+CityName[1:])
+		}
 		url := MainUrl + "?name=" + CityName + "&count=1"
 		fmt.Println(url)
 		resp, err := http.Get(url)
@@ -46,13 +47,14 @@ var getCmd = &cobra.Command{
 		var FetchedPopulationString = strconv.Itoa(int(FetchedPopulation.(float64)))
 		var FetchedPopulationFloat, _ = strconv.ParseFloat(FetchedPopulationString, 64)
 		var FetchedPopulationInt = int64(FetchedPopulationFloat)
-		printer(FetchedCityName, FetchedCountryName, FetchedLatitude, FetchedLongitude, FetchedTimezone, FetchedPopulation, FetchedPopulationInt)
 		if cmd.Flag("raw").Value.String() == "true" {
 			json, err := json.Marshal(data)
 			if err != nil {
 				log.Fatalln(err)
 			}
 			os.Stdout.Write(json)
+		} else {
+			printer(FetchedCityName, FetchedCountryName, FetchedLatitude, FetchedLongitude, FetchedTimezone, FetchedPopulation, FetchedPopulationInt)
 		}
 	},
 }
