@@ -49,7 +49,6 @@ var getCmd = &cobra.Command{
 		var FetchedPopulationInt = int64(FetchedPopulationFloat)
 
 		forecastUrl := SecondUrl + "?latitude=" + fmt.Sprintf("%.4f", FetchedLatitude) + "&longitude=" + fmt.Sprintf("%.4f", FetchedLongitude) + "&current_weather=true" + "&hourly=relativehumidity_2m"
-		fmt.Println(forecastUrl)
 		resp, err = http.Get(forecastUrl)
 		if err != nil {
 			log.Fatalln(err)
@@ -76,7 +75,7 @@ var getCmd = &cobra.Command{
 			}
 			os.Stdout.Write(jsn)
 			fmt.Println()
-			jsn, err = json.Marshal(cityinfoData)
+			jsn, err = json.Marshal(forecastData)
 			if err != nil {
 				log.Fatalln(err)
 			}

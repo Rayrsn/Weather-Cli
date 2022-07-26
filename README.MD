@@ -26,12 +26,38 @@
 
 
 ## Building 🔨
-BUILD_INSTRUCTIONS
-* **The executable will be located in PROJECT_NAME**
+```bash
+go build
+```
+* **The executable will be located in the same directory you ran the command from**
 
 ## Usage 💻
-USAGE_INSTRUCTIONS
+* Example 1:
+```bash
+./weather-cli Tokyo
+__________________________
+Searching for city Tokyo ...
 
+City/Country: Tokyo/Japan
+Latitude: 35.689500
+Longitude: 139.691710
+Timezone: Asia/Tokyo
+Population: 8,336,599 (8.336599e+06)
+
+Weather Info:
+        Temperature: 27.4°
+        Wind Direction: 192°
+        Wind Speed: 15.5 Km/h
+        Weather Condition: Overcast
+        Humidity: 85.91%
+
+```
+* Example 2:
+```bash
+./weather-cli Tokyo --raw
+__________________________
+(Prints the same data but in JSON)
+```
 
 ## Acknowledgments and FAQ 📚
 ACKNOWLEDGEMENTS
