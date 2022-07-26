@@ -25,6 +25,10 @@ var getCmd = &cobra.Command{
 	Short: "Gets the weather for a city",
 	Long:  `Gets the weather info for a city. (Can be used with --raw to get a json response)`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			fmt.Println("Please enter a city name")
+			os.Exit(1)
+		}
 		var CityName = args[0]
 		if cmd.Flag("raw").Value.String() == "false" {
 			fmt.Printf("Searching for city %s ...\n\n", strings.ToUpper(CityName[:1])+CityName[1:])
