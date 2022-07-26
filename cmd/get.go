@@ -31,7 +31,7 @@ var getCmd = &cobra.Command{
 		}
 		var CityName = args[0]
 		if cmd.Flag("raw").Value.String() == "false" {
-			fmt.Printf("Searching for city %s ...\n\n", strings.ToUpper(CityName[:1])+CityName[1:])
+			fmt.Printf("Searching for city %s...\n\n", strings.ToUpper(CityName[:1])+CityName[1:])
 		}
 		cityinfoUrl := MainUrl + "?name=" + CityName + "&count=1"
 

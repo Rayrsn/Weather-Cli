@@ -37,7 +37,7 @@ go build
 ```bash
 ./weather-cli Tokyo
 __________________________
-Searching for city Tokyo ...
+Searching for city Tokyo...
 
 City/Country: Tokyo/Japan
 Latitude: 35.689500
