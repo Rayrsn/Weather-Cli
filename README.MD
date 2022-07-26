@@ -61,7 +61,7 @@ __________________________
 ```
 
 ## Acknowledgments and FAQ 📚
-Api used : [Open-Meteo](https://open-meteo.com/)
+API used : [Open-Meteo](https://open-meteo.com/)
 
 ## Questions ⁉️
 ### If yall have any questions or just wanna talk, add me on [Discord](https://rayr.ml/LinkInBio) or use my username Rayr#6401 (this might change so it's better to just use the link)
