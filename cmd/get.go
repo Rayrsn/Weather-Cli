@@ -7,7 +7,9 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -31,7 +33,7 @@ var getCmd = &cobra.Command{
 		fmt.Println(url)
 		resp, err := http.Get(url)
 		if err != nil {
-			fmt.Println(err)
+			log.Fatalln(err)
 		}
 		var data map[string]interface{}
 		json.NewDecoder(resp.Body).Decode(&data)
@@ -45,7 +47,13 @@ var getCmd = &cobra.Command{
 		var FetchedPopulationFloat, _ = strconv.ParseFloat(FetchedPopulationString, 64)
 		var FetchedPopulationInt = int64(FetchedPopulationFloat)
 		printer(FetchedCityName, FetchedCountryName, FetchedLatitude, FetchedLongitude, FetchedTimezone, FetchedPopulation, FetchedPopulationInt)
-
+		if cmd.Flag("raw").Value.String() == "true" {
+			json, err := json.Marshal(data)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			os.Stdout.Write(json)
+		}
 	},
 }
 

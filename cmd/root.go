@@ -30,8 +30,6 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.MarkFlagRequired("city")
-	rootCmd.Flags().BoolP("raw", "r", false, "Show raw data")
 	rootCmd.Flags().BoolP("version", "v", false, "Print the version number")
 	rootCmd.SetVersionTemplate("Hey there, I'm version {{.Version}}")
 
