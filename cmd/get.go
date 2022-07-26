@@ -20,7 +20,6 @@ import (
 var MainUrl = "https://geocoding-api.open-meteo.com/v1/search"
 var SecondUrl = "https://api.open-meteo.com/v1/forecast"
 
-//https://api.open-meteo.com/v1/forecast?latitude=35.7061&longitude=51.4358&hourly=temperature_2m
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Gets the weather for a city",
