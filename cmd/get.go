@@ -48,7 +48,8 @@ var getCmd = &cobra.Command{
 		var FetchedPopulationFloat, _ = strconv.ParseFloat(FetchedPopulationString, 64)
 		var FetchedPopulationInt = int64(FetchedPopulationFloat)
 
-		forecastUrl := SecondUrl + "?latitude=" + fmt.Sprintf("%.4f", FetchedLatitude) + "&longitude=" + fmt.Sprintf("%.4f", FetchedLongitude) + "&current_weather=true"
+		forecastUrl := SecondUrl + "?latitude=" + fmt.Sprintf("%.4f", FetchedLatitude) + "&longitude=" + fmt.Sprintf("%.4f", FetchedLongitude) + "&current_weather=true" + "&hourly=relativehumidity_2m"
+		fmt.Println(forecastUrl)
 		resp, err = http.Get(forecastUrl)
 		if err != nil {
 			log.Fatalln(err)
@@ -59,6 +60,15 @@ var getCmd = &cobra.Command{
 		var FetchedWindSpeed = forecastData["current_weather"].(map[string]interface{})["windspeed"]
 		var FetchedWindDirection = forecastData["current_weather"].(map[string]interface{})["winddirection"]
 		var FetchedWeathercode = forecastData["current_weather"].(map[string]interface{})["weathercode"]
+		var FetchedHumidity = forecastData["hourly"].(map[string]interface{})["relativehumidity_2m"]
+
+		// Get the average humidity for the day
+		var FetchedHumidityAverage float64
+		for i := 0; i < 24; i++ {
+			FetchedHumidityAverage += FetchedHumidity.([]interface{})[i].(float64)
+		}
+		FetchedHumidityAverage = FetchedHumidityAverage / 23
+
 		if cmd.Flag("raw").Value.String() == "true" {
 			jsn, err := json.Marshal(cityinfoData)
 			if err != nil {
@@ -83,6 +93,7 @@ var getCmd = &cobra.Command{
 				FetchedWindSpeed,
 				FetchedWindDirection,
 				translateweathercode(fmt.Sprintf("%v", FetchedWeathercode)),
+				FetchedHumidityAverage,
 			)
 		}
 	},
@@ -99,7 +110,7 @@ func printer(Name interface{},
 	WindSpeed interface{},
 	WindDirection interface{},
 	WeatherCode string,
-) {
+	HumidityAverage float64) {
 	fmt.Printf("City/Country: %s/%s\n", Name, Country)
 	fmt.Printf("Latitude: %f\n", Latitude)
 	fmt.Printf("Longitude: %f\n", Longitude)
@@ -110,6 +121,7 @@ func printer(Name interface{},
 	fmt.Printf("	Wind Direction: %.0f°\n", WindDirection)
 	fmt.Printf("	Wind Speed: %.1f Km/h\n", WindSpeed)
 	fmt.Printf("	Weather Condition: %s\n", WeatherCode)
+	fmt.Printf("	Humidity: %.2f%%\n", HumidityAverage)
 }
 
 func translateweathercode(code string) string {
