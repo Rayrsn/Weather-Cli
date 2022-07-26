@@ -50,14 +50,12 @@ var getCmd = &cobra.Command{
 		var FetchedPopulationInt = int64(FetchedPopulationFloat)
 
 		forecastUrl := SecondUrl + "?latitude=" + fmt.Sprintf("%.4f", FetchedLatitude) + "&longitude=" + fmt.Sprintf("%.4f", FetchedLongitude) + "&current_weather=true"
-		fmt.Println(forecastUrl)
 		resp, err = http.Get(forecastUrl)
 		if err != nil {
 			log.Fatalln(err)
 		}
 		var forecastData map[string]interface{}
 		json.NewDecoder(resp.Body).Decode(&forecastData)
-		fmt.Println(forecastData)
 		var FetchedTemperature = forecastData["current_weather"].(map[string]interface{})["temperature"]
 		var FetchedWindSpeed = forecastData["current_weather"].(map[string]interface{})["windspeed"]
 		var FetchedWindDirection = forecastData["current_weather"].(map[string]interface{})["winddirection"]
