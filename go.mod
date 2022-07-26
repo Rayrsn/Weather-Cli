@@ -1,4 +1,4 @@
-module github.com/NRJoes/weather-Cli
+module github.com/Rayrsn/weather-Cli
 
 go 1.18
 

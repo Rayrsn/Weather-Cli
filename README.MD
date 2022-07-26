@@ -4,10 +4,10 @@
 ## **An app made to get weather information through the terminal**
 
 <p align="center">
-  <img width=40% height=40% src="https://github.com/NRJoes/Weather-Cli/raw/main/cloud.gif?raw=true" alt="MAIN_IMAGE_NAME">
+  <img width=40% height=40% src="https://github.com/Rayrsn/Weather-Cli/raw/main/cloud.gif?raw=true" alt="MAIN_IMAGE_NAME">
 </p>
 
-[![Status Badge](https://github.com/https://github.com/NRJoes/Weather-Cli/actions/workflows/go.yml/badge.svg)](https://github.com/https://github.com/NRJoes/Weather-Cli/actions/workflows/go.yml)
+[![Status Badge](https://github.com/Rayrsn/Weather-Cli/actions/workflows/go.yml/badge.svg)](https://github.com/https://github.com/Rayrsn/Weather-Cli/actions/workflows/go.yml)
 
 </div>
 
