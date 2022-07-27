@@ -59,7 +59,7 @@ var getCmd = &cobra.Command{
 			FetchedPopulationInt = int64(FetchedPopulationFloat)
 		}
 
-		forecastUrl := SecondUrl + "?latitude=" + fmt.Sprintf("%.4f", FetchedLatitude) + "&longitude=" + fmt.Sprintf("%.4f", FetchedLongitude) + "&current_weather=true" + "&hourly=relativehumidity_2m,apparent_temperature"
+		forecastUrl := SecondUrl + "?latitude=" + fmt.Sprintf("%.4f", FetchedLatitude) + "&longitude=" + fmt.Sprintf("%.4f", FetchedLongitude) + "&current_weather=true" + "&hourly=relativehumidity_2m,apparent_temperature,surface_pressure"
 		resp, err = http.Get(forecastUrl)
 		if err != nil {
 			log.Fatalln(err)
@@ -72,6 +72,7 @@ var getCmd = &cobra.Command{
 		var FetchedWeathercode = forecastData["current_weather"].(map[string]interface{})["weathercode"]
 		var FetchedHumidity = forecastData["hourly"].(map[string]interface{})["relativehumidity_2m"]
 		var FetchedRealFeel = forecastData["hourly"].(map[string]interface{})["apparent_temperature"]
+		var FetchedSurfacePressure = forecastData["hourly"].(map[string]interface{})["surface_pressure"]
 
 		// Get the average humidity for the day
 		var FetchedHumidityAverage float64
@@ -86,6 +87,13 @@ var getCmd = &cobra.Command{
 			FetchedRealFeelAverage += FetchedRealFeel.([]interface{})[i].(float64)
 		}
 		FetchedRealFeelAverage = FetchedRealFeelAverage / 23
+
+		// Get the average surface pressure for the day
+		var FetchedSurfacePressureAverage float64
+		for i := 0; i < 24; i++ {
+			FetchedSurfacePressureAverage += FetchedSurfacePressure.([]interface{})[i].(float64)
+		}
+		FetchedSurfacePressureAverage = FetchedSurfacePressureAverage / 23
 
 		if cmd.Flag("raw").Value.String() == "true" {
 			jsn, err := json.Marshal(cityinfoData)
@@ -113,6 +121,7 @@ var getCmd = &cobra.Command{
 				translateweathercode(fmt.Sprintf("%v", FetchedWeathercode)),
 				FetchedHumidityAverage,
 				FetchedRealFeelAverage,
+				FetchedSurfacePressureAverage,
 			)
 		}
 	},
@@ -130,7 +139,8 @@ func printer(Name interface{},
 	WindDirection interface{},
 	WeatherCode string,
 	HumidityAverage float64,
-	RealFeelAverage float64) {
+	RealFeelAverage float64,
+	SurfacePressureAverage float64) {
 	fmt.Printf("City/Country: %s/%s\n", Name, Country)
 	fmt.Printf("Latitude: %f\n", Latitude)
 	fmt.Printf("Longitude: %f\n", Longitude)
@@ -143,6 +153,7 @@ func printer(Name interface{},
 	fmt.Printf("	Weather Condition: %s\n", WeatherCode)
 	fmt.Printf("	Humidity: %.2f%%\n", HumidityAverage)
 	fmt.Printf("	Real Feel: %.1f°\n", HumidityAverage)
+	fmt.Printf("	Surface Pressure: %.2f hPa\n", SurfacePressureAverage)
 }
 
 func translateweathercode(code string) string {
