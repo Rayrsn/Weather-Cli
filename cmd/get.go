@@ -47,9 +47,17 @@ var getCmd = &cobra.Command{
 		var FetchedLongitude = cityinfoData["results"].([]interface{})[0].(map[string]interface{})["longitude"]
 		var FetchedTimezone = cityinfoData["results"].([]interface{})[0].(map[string]interface{})["timezone"]
 		var FetchedPopulation = cityinfoData["results"].([]interface{})[0].(map[string]interface{})["population"]
-		var FetchedPopulationString = strconv.Itoa(int(FetchedPopulation.(float64)))
-		var FetchedPopulationFloat, _ = strconv.ParseFloat(FetchedPopulationString, 64)
-		var FetchedPopulationInt = int64(FetchedPopulationFloat)
+		var FetchedPopulationString string
+		var FetchedPopulationFloat float64
+		var FetchedPopulationInt int64
+
+		if FetchedPopulation == nil {
+			FetchedPopulationInt = int64(0)
+		} else {
+			FetchedPopulationString = strconv.Itoa(int(FetchedPopulation.(float64)))
+			FetchedPopulationFloat, _ = strconv.ParseFloat(FetchedPopulationString, 64)
+			FetchedPopulationInt = int64(FetchedPopulationFloat)
+		}
 
 		forecastUrl := SecondUrl + "?latitude=" + fmt.Sprintf("%.4f", FetchedLatitude) + "&longitude=" + fmt.Sprintf("%.4f", FetchedLongitude) + "&current_weather=true" + "&hourly=relativehumidity_2m,apparent_temperature"
 		resp, err = http.Get(forecastUrl)
