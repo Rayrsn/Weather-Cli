@@ -96,10 +96,12 @@ var getCmd = &cobra.Command{
 		FetchedSurfacePressureAverage = FetchedSurfacePressureAverage / 23
 
 		if cmd.Flag("raw").Value.String() == "true" {
-			jsn, err := json.Marshal(cityinfoData)
+			// only print the first entry under "results"
+			jsn, err := json.Marshal(cityinfoData["results"].([]interface{})[0])
 			if err != nil {
 				log.Fatalln(err)
 			}
+
 			os.Stdout.Write(jsn)
 			fmt.Println()
 			jsn, err = json.Marshal(forecastData)
