@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 Rayr https://rayr.ml/LinkInBio/
-
 */
 package cmd
 
@@ -81,6 +80,9 @@ var getCmd = &cobra.Command{
 		}
 		FetchedHumidityAverage = FetchedHumidityAverage / 23
 
+		// Add FetchedHumidityAverage to forecastData
+		forecastData["hourly"].(map[string]interface{})["relativehumidity_2m"] = FetchedHumidityAverage
+
 		// Get the average feels-like temperature for the day
 		var FetchedRealFeelAverage float64
 		for i := 0; i < 24; i++ {
@@ -88,12 +90,21 @@ var getCmd = &cobra.Command{
 		}
 		FetchedRealFeelAverage = FetchedRealFeelAverage / 23
 
+		// Add FetchedRealFeelAverage to forecastData
+		forecastData["hourly"].(map[string]interface{})["apparent_temperature"] = FetchedRealFeelAverage
+
 		// Get the average surface pressure for the day
 		var FetchedSurfacePressureAverage float64
 		for i := 0; i < 24; i++ {
 			FetchedSurfacePressureAverage += FetchedSurfacePressure.([]interface{})[i].(float64)
 		}
 		FetchedSurfacePressureAverage = FetchedSurfacePressureAverage / 23
+
+		// Add FetchedSurfacePressureAverage to forecastData
+		forecastData["hourly"].(map[string]interface{})["surface_pressure"] = FetchedSurfacePressureAverage
+
+		// Remove time key from hourly
+		delete(forecastData["hourly"].(map[string]interface{}), "time")
 
 		if cmd.Flag("raw").Value.String() == "true" {
 			// only print the first entry under "results"
