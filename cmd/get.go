@@ -28,11 +28,13 @@ var getCmd = &cobra.Command{
 			fmt.Println("Please enter a city name")
 			os.Exit(1)
 		}
+		var CityNameFormatted = strings.Replace(args[0], " ", "%20", -1)
 		var CityName = args[0]
+
 		if cmd.Flag("raw").Value.String() == "false" {
 			fmt.Printf("Searching for city %s...\n\n", strings.ToUpper(CityName[:1])+CityName[1:])
 		}
-		cityinfoUrl := MainUrl + "?name=" + CityName + "&count=1"
+		cityinfoUrl := MainUrl + "?name=" + CityNameFormatted + "&count=1"
 
 		resp, err := http.Get(cityinfoUrl)
 		if err != nil {
