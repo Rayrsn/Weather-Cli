@@ -206,19 +206,19 @@ func translateweathercode(code string) string {
 	case "67":
 		return "Heavy Freezing Rain"
 	case "71":
-		return "Slight Snow fall"
+		return "Slight Snow Fall"
 	case "73":
-		return "Moderate Snow fall"
+		return "Moderate Snow Fall"
 	case "75":
-		return "Heavy Snow fall"
+		return "Heavy Snow Fall"
 	case "77":
 		return "Snow Grains"
 	case "80":
-		return "Slight Rain showers"
+		return "Slight Rain Showers"
 	case "81":
-		return "Moderate Rain showers"
+		return "Moderate Rain Showers"
 	case "82":
-		return "Violent Rain showers"
+		return "Violent Rain Showers"
 	case "85":
 		return "Slight Snow Showers"
 	case "86":
