@@ -64,7 +64,9 @@ __________________________
 ```
 
 ## Acknowledgments and FAQ 📚
-API used : [Open-Meteo](https://open-meteo.com/)
+API used: [Open-Meteo](https://open-meteo.com/)
+
+Built with: [Cobra](https://github.com/spf13/cobra)
 
 ## Questions ⁉️
 ### If yall have any questions or just wanna talk, add me on [Discord](https://rayr.ml/LinkInBio) or use my username Rayr#6401 (this might change so it's better to just use the link)
