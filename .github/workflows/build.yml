@@ -11,6 +11,11 @@ jobs:
     - uses: actions/setup-go@v3
     - name: Build-lin
       run: go build -x -v 
+    - name: Upload Release
+      uses: actions/upload-artifact@v3
+      with:
+        name: lin
+        path: ./lin
 
   build-win: 
     runs-on: windows-latest
