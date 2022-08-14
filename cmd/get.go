@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"strconv"
@@ -19,6 +20,7 @@ import (
 
 var GeocodingUrl = "https://geocoding-api.open-meteo.com/v1/search"
 var ForecastUrl = "https://api.open-meteo.com/v1/forecast"
+var AirQualityUrl = "https://air-quality-api.open-meteo.com/v1/air-quality"
 
 var getCmd = &cobra.Command{
 	Use:   "get",
@@ -104,16 +106,44 @@ var getCmd = &cobra.Command{
 		// Remove time key from hourly
 		delete(forecastData["hourly"].(map[string]interface{}), "time")
 
+		airqualityUrl := AirQualityUrl + "?timezone=auto" + "&latitude=" + fmt.Sprintf("%.4f", FetchedLatitude) + "&longitude=" + fmt.Sprintf("%.4f", FetchedLongitude) + "&hourly=uv_index"
+		resp, err = http.Get(airqualityUrl)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		var airqualityData map[string]interface{}
+		json.NewDecoder(resp.Body).Decode(&airqualityData)
+		var FetchedUVIndex = airqualityData["hourly"].(map[string]interface{})["uv_index"]
+
+		// Get maximum UV index
+		var FetchedUVIndexMax float64
+		for i := 0; i < 24; i++ {
+			if FetchedUVIndex.([]interface{})[i].(float64) > FetchedUVIndexMax {
+				FetchedUVIndexMax = FetchedUVIndex.([]interface{})[i].(float64)
+			}
+		}
+
+		delete(airqualityData["hourly"].(map[string]interface{}), "time")
+
 		if cmd.Flag("raw").Value.String() == "true" {
 			// only print the first entry under "results"
 			jsn, err := json.Marshal(cityinfoData["results"].([]interface{})[0])
 			if err != nil {
 				log.Fatalln(err)
 			}
-
 			os.Stdout.Write(jsn)
+
 			fmt.Println()
+
 			jsn, err = json.Marshal(forecastData)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			os.Stdout.Write(jsn)
+
+			fmt.Println()
+
+			jsn, err = json.Marshal(airqualityData)
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -134,6 +164,7 @@ var getCmd = &cobra.Command{
 				FetchedRealFeelCurrent,
 				FetchedSurfacePressureCurrent,
 				FetchedSealevelPressureCurrent,
+				FetchedUVIndexMax,
 			)
 		}
 	},
@@ -153,7 +184,8 @@ func printer(Name interface{},
 	HumidityCurrent float64,
 	RealFeelCurrent float64,
 	SurfacePressureCurrent float64,
-	SealevelPressureCurrent float64) {
+	SealevelPressureCurrent float64,
+	UVIndexMax float64) {
 	fmt.Printf("City/Country: %s/%s\n", Name, Country)
 	fmt.Printf("Latitude: %f\n", Latitude)
 	fmt.Printf("Longitude: %f\n", Longitude)
@@ -168,6 +200,7 @@ func printer(Name interface{},
 	fmt.Printf("	Real Feel: %.1f°\n", RealFeelCurrent)
 	fmt.Printf("	Surface Pressure: %.2f hPa\n", SurfacePressureCurrent)
 	fmt.Printf("	Sealevel Pressure: %.2f hPa\n", SealevelPressureCurrent)
+	fmt.Printf("	UV Index: %v\n", math.Round(UVIndexMax))
 }
 
 func translateweathercode(code string) string {
