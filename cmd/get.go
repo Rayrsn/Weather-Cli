@@ -16,8 +16,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var MainUrl = "https://geocoding-api.open-meteo.com/v1/search"
-var SecondUrl = "https://api.open-meteo.com/v1/forecast"
+var GeocodingUrl = "https://geocoding-api.open-meteo.com/v1/search"
+var ForecastUrl = "https://api.open-meteo.com/v1/forecast"
 
 var getCmd = &cobra.Command{
 	Use:   "get",
@@ -34,7 +34,7 @@ var getCmd = &cobra.Command{
 		if cmd.Flag("raw").Value.String() == "false" {
 			fmt.Printf("Searching for city %s...\n\n", strings.ToUpper(CityName[:1])+CityName[1:])
 		}
-		cityinfoUrl := MainUrl + "?name=" + CityNameFormatted + "&count=1"
+		cityinfoUrl := GeocodingUrl + "?name=" + CityNameFormatted + "&count=1"
 
 		resp, err := http.Get(cityinfoUrl)
 		if err != nil {
@@ -60,7 +60,7 @@ var getCmd = &cobra.Command{
 			FetchedPopulationInt = int64(FetchedPopulationFloat)
 		}
 
-		forecastUrl := SecondUrl + "?latitude=" + fmt.Sprintf("%.4f", FetchedLatitude) + "&longitude=" + fmt.Sprintf("%.4f", FetchedLongitude) + "&current_weather=true" + "&hourly=relativehumidity_2m,apparent_temperature,surface_pressure"
+		forecastUrl := ForecastUrl + "?latitude=" + fmt.Sprintf("%.4f", FetchedLatitude) + "&longitude=" + fmt.Sprintf("%.4f", FetchedLongitude) + "&current_weather=true" + "&hourly=relativehumidity_2m,apparent_temperature,surface_pressure"
 		resp, err = http.Get(forecastUrl)
 		if err != nil {
 			log.Fatalln(err)
