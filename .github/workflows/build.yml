@@ -24,6 +24,12 @@ jobs:
     - uses: actions/setup-go@v3
     - name: Build-win
       run: go build -x -v 
+    - name: Upload Release
+      uses: actions/upload-artifact@v3
+      with:
+        name: win
+        path: ./
+
 
   build-mac:
     runs-on: macos-11
@@ -32,3 +38,9 @@ jobs:
     - uses: actions/setup-go@v3
     - name: Build-mac
       run: go build -x -v 
+    - name: Upload Release
+      uses: actions/upload-artifact@v3
+      with:
+        name: mac
+        path: ./
+
