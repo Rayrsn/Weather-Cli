@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 Rayr https://rayr.ml/LinkInBio/
-
 */
 package cmd
 
@@ -15,7 +14,7 @@ var rootCmd = &cobra.Command{
 	Short: "An app made to get weather information through the terminal",
 	Long: `You can use this app to get weather information through the terminal.
 it can also be used with the --raw flag to get the response in json format.`,
-	Version: "1.1.0",
+	Version: "1.2.0",
 }
 
 func Execute() {
