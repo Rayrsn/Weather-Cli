@@ -15,7 +15,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: lin
-        path: ./
+        path: ./weather-Cli
 
   build-win: 
     runs-on: windows-latest
