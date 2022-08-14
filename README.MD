@@ -28,8 +28,13 @@
     * UV Index
 * Raw JSON output
 
-
 ## Building 🔨
+* If you don't want to manually build the app, you can use:
+  * The [weather-cli](https://aur.archlinux.org/packages/weather-cli) AUR if you're on Arch
+  * Grab a binary from the [Artifacts](https://github.com/Rayrsn/Weather-Cli/actions/runs/2855792914)
+
+Otherwise, you can build the program yourself by running:
+
 ```bash
 go build
 ```
@@ -38,7 +43,7 @@ go build
 ## Usage 💻
 * Example 1:
 ```bash
-./weather-cli Tokyo
+./weather-Cli get Tokyo
 __________________________
 Searching for city Tokyo...
 
@@ -49,20 +54,21 @@ Timezone: Asia/Tokyo
 Population: 8,336,599 (8.336599e+06)
 
 Weather Info:
-        Temperature: 27.4°
-        Wind Direction: 192°
-        Wind Speed: 15.5 Km/h
-        Weather Condition: Overcast
-        Humidity: 85.91%
-        Real Feel: 78.0°
-        Surface Pressure: 1051.16 hPa
-
+        Temperature: 28.5°
+        Wind Direction: 168°
+        Wind Speed: 7.0 Km/h
+        Weather Condition: Partly Cloudy
+        Humidity: 50.00%
+        Real Feel: 39.1°
+        Surface Pressure: 999.60 hPa
+        Sealevel Pressure: 1004.00 hPa
+        UV Index: 6
 ```
 * Example 2:
 ```bash
-./weather-cli Tokyo --raw
+./weather-Cli get Tokyo --raw
 __________________________
-(Prints the same data but in JSON)
+(Returns the same data but in JSON)
 ```
 
 ## Acknowledgments and FAQ 📚
