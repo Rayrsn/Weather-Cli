@@ -35,6 +35,8 @@
 
 Otherwise, you can build the program yourself by running:
 
+***Make sure you have Go installed***
+
 ```bash
 go build
 ```
