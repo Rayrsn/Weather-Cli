@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/dustin/go-humanize"
 	"github.com/spf13/cobra"
@@ -60,7 +61,7 @@ var getCmd = &cobra.Command{
 			FetchedPopulationInt = int64(FetchedPopulationFloat)
 		}
 
-		forecastUrl := ForecastUrl + "?latitude=" + fmt.Sprintf("%.4f", FetchedLatitude) + "&longitude=" + fmt.Sprintf("%.4f", FetchedLongitude) + "&current_weather=true" + "&hourly=relativehumidity_2m,apparent_temperature,surface_pressure"
+		forecastUrl := ForecastUrl + "?timezone=auto" + "&latitude=" + fmt.Sprintf("%.4f", FetchedLatitude) + "&longitude=" + fmt.Sprintf("%.4f", FetchedLongitude) + "&current_weather=true" + "&hourly=relativehumidity_2m,apparent_temperature,surface_pressure,pressure_msl"
 		resp, err = http.Get(forecastUrl)
 		if err != nil {
 			log.Fatalln(err)
@@ -75,35 +76,23 @@ var getCmd = &cobra.Command{
 		var FetchedRealFeel = forecastData["hourly"].(map[string]interface{})["apparent_temperature"]
 		var FetchedSurfacePressure = forecastData["hourly"].(map[string]interface{})["surface_pressure"]
 
-		// Get the average humidity for the day
-		var FetchedHumidityAverage float64
-		for i := 0; i < 24; i++ {
-			FetchedHumidityAverage += FetchedHumidity.([]interface{})[i].(float64)
-		}
-		FetchedHumidityAverage = FetchedHumidityAverage / 23
+		// Get the current humidity for the day
+		var FetchedHumidityCurrent = FetchedHumidity.([]interface{})[time.Now().Hour()].(float64)
 
-		// Add FetchedHumidityAverage to forecastData
-		forecastData["hourly"].(map[string]interface{})["relativehumidity_2m"] = FetchedHumidityAverage
+		// Add FetchedHumidityCurrent to forecastData
+		forecastData["hourly"].(map[string]interface{})["relativehumidity_2m"] = FetchedHumidityCurrent
 
-		// Get the average feels-like temperature for the day
-		var FetchedRealFeelAverage float64
-		for i := 0; i < 24; i++ {
-			FetchedRealFeelAverage += FetchedRealFeel.([]interface{})[i].(float64)
-		}
-		FetchedRealFeelAverage = FetchedRealFeelAverage / 23
+		// Get the current feels-like temperature for the day
+		var FetchedRealFeelCurrent = FetchedRealFeel.([]interface{})[time.Now().Hour()].(float64)
 
-		// Add FetchedRealFeelAverage to forecastData
-		forecastData["hourly"].(map[string]interface{})["apparent_temperature"] = FetchedRealFeelAverage
+		// Add FetchedRealFeelCurrent to forecastData
+		forecastData["hourly"].(map[string]interface{})["apparent_temperature"] = FetchedRealFeelCurrent
 
-		// Get the average surface pressure for the day
-		var FetchedSurfacePressureAverage float64
-		for i := 0; i < 24; i++ {
-			FetchedSurfacePressureAverage += FetchedSurfacePressure.([]interface{})[i].(float64)
-		}
-		FetchedSurfacePressureAverage = FetchedSurfacePressureAverage / 23
+		// Get the current surface pressure for the day
+		var FetchedSurfacePressureCurrent = FetchedSurfacePressure.([]interface{})[time.Now().Hour()].(float64)
 
-		// Add FetchedSurfacePressureAverage to forecastData
-		forecastData["hourly"].(map[string]interface{})["surface_pressure"] = FetchedSurfacePressureAverage
+		// Add FetchedSurfacePressureCurrent to forecastData
+		forecastData["hourly"].(map[string]interface{})["surface_pressure"] = FetchedSurfacePressureCurrent
 
 		// Remove time key from hourly
 		delete(forecastData["hourly"].(map[string]interface{}), "time")
@@ -134,9 +123,9 @@ var getCmd = &cobra.Command{
 				FetchedWindSpeed,
 				FetchedWindDirection,
 				translateweathercode(fmt.Sprintf("%v", FetchedWeathercode)),
-				FetchedHumidityAverage,
-				FetchedRealFeelAverage,
-				FetchedSurfacePressureAverage,
+				FetchedHumidityCurrent,
+				FetchedRealFeelCurrent,
+				FetchedSurfacePressureCurrent,
 			)
 		}
 	},
@@ -153,9 +142,9 @@ func printer(Name interface{},
 	WindSpeed interface{},
 	WindDirection interface{},
 	WeatherCode string,
-	HumidityAverage float64,
-	RealFeelAverage float64,
-	SurfacePressureAverage float64) {
+	HumidityCurrent float64,
+	RealFeelCurrent float64,
+	SurfacePressureCurrent float64) {
 	fmt.Printf("City/Country: %s/%s\n", Name, Country)
 	fmt.Printf("Latitude: %f\n", Latitude)
 	fmt.Printf("Longitude: %f\n", Longitude)
@@ -166,9 +155,9 @@ func printer(Name interface{},
 	fmt.Printf("	Wind Direction: %.0f°\n", WindDirection)
 	fmt.Printf("	Wind Speed: %.1f Km/h\n", WindSpeed)
 	fmt.Printf("	Weather Condition: %s\n", WeatherCode)
-	fmt.Printf("	Humidity: %.2f%%\n", HumidityAverage)
-	fmt.Printf("	Real Feel: %.1f°\n", HumidityAverage)
-	fmt.Printf("	Surface Pressure: %.2f hPa\n", SurfacePressureAverage)
+	fmt.Printf("	Humidity: %.2f%%\n", HumidityCurrent)
+	fmt.Printf("	Real Feel: %.1f°\n", RealFeelCurrent)
+	fmt.Printf("	Surface Pressure: %.2f hPa\n", SurfacePressureCurrent)
 }
 
 func translateweathercode(code string) string {
