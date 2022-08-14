@@ -14,7 +14,7 @@ jobs:
     - name: Upload Release
       uses: actions/upload-artifact@v3
       with:
-        name: lin
+        name: Linux
         path: ./weather-Cli
 
   build-win: 
@@ -27,8 +27,8 @@ jobs:
     - name: Upload Release
       uses: actions/upload-artifact@v3
       with:
-        name: win
-        path: ./
+        name: Windows
+        path: ./weather-Cli.exe
 
 
   build-mac:
@@ -41,6 +41,6 @@ jobs:
     - name: Upload Release
       uses: actions/upload-artifact@v3
       with:
-        name: mac
-        path: ./
+        name: MacOS
+        path: ./weather-Cli
 
