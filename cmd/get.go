@@ -75,6 +75,7 @@ var getCmd = &cobra.Command{
 		var FetchedHumidity = forecastData["hourly"].(map[string]interface{})["relativehumidity_2m"]
 		var FetchedRealFeel = forecastData["hourly"].(map[string]interface{})["apparent_temperature"]
 		var FetchedSurfacePressure = forecastData["hourly"].(map[string]interface{})["surface_pressure"]
+		var FetchedSealevelPressure = forecastData["hourly"].(map[string]interface{})["pressure_msl"]
 
 		// Get the current humidity for the day
 		var FetchedHumidityCurrent = FetchedHumidity.([]interface{})[time.Now().Hour()].(float64)
@@ -93,6 +94,12 @@ var getCmd = &cobra.Command{
 
 		// Add FetchedSurfacePressureCurrent to forecastData
 		forecastData["hourly"].(map[string]interface{})["surface_pressure"] = FetchedSurfacePressureCurrent
+
+		// Get the current sealevel pressure for the day
+		var FetchedSealevelPressureCurrent = FetchedSealevelPressure.([]interface{})[time.Now().Hour()].(float64)
+
+		// Add FetchedSealevelPressureCurrent to forecastData
+		forecastData["hourly"].(map[string]interface{})["pressure_msl"] = FetchedSealevelPressureCurrent
 
 		// Remove time key from hourly
 		delete(forecastData["hourly"].(map[string]interface{}), "time")
@@ -126,6 +133,7 @@ var getCmd = &cobra.Command{
 				FetchedHumidityCurrent,
 				FetchedRealFeelCurrent,
 				FetchedSurfacePressureCurrent,
+				FetchedSealevelPressureCurrent,
 			)
 		}
 	},
@@ -144,7 +152,8 @@ func printer(Name interface{},
 	WeatherCode string,
 	HumidityCurrent float64,
 	RealFeelCurrent float64,
-	SurfacePressureCurrent float64) {
+	SurfacePressureCurrent float64,
+	SealevelPressureCurrent float64) {
 	fmt.Printf("City/Country: %s/%s\n", Name, Country)
 	fmt.Printf("Latitude: %f\n", Latitude)
 	fmt.Printf("Longitude: %f\n", Longitude)
@@ -158,6 +167,7 @@ func printer(Name interface{},
 	fmt.Printf("	Humidity: %.2f%%\n", HumidityCurrent)
 	fmt.Printf("	Real Feel: %.1f°\n", RealFeelCurrent)
 	fmt.Printf("	Surface Pressure: %.2f hPa\n", SurfacePressureCurrent)
+	fmt.Printf("	Sealevel Pressure: %.2f hPa\n", SealevelPressureCurrent)
 }
 
 func translateweathercode(code string) string {
