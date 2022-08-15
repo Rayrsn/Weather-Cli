@@ -14,7 +14,7 @@ var rootCmd = &cobra.Command{
 	Short: "An app made to get weather information through the terminal",
 	Long: `You can use this app to get weather information through the terminal.
 it can also be used with the --raw flag to get the response in json format.`,
-	Version: "1.2.1",
+	Version: "1.2.2",
 }
 
 func Execute() {
