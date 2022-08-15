@@ -53,7 +53,7 @@ City/Country: Tokyo/Japan
 Latitude: 35.689500
 Longitude: 139.691710
 Timezone: Asia/Tokyo
-Population: 8,336,599 (8.336599e+06)
+Population: 8,336,599
 
 Weather Info:
         Temperature: 28.5°
