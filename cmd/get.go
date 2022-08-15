@@ -122,7 +122,10 @@ var getCmd = &cobra.Command{
 				FetchedUVIndexMax = FetchedUVIndex.([]interface{})[i].(float64)
 			}
 		}
+		// Add FetchedUVIndexMax to airqualityData
+		airqualityData["hourly"].(map[string]interface{})["uv_index"] = FetchedUVIndexMax
 
+		// Remove time key from hourly
 		delete(airqualityData["hourly"].(map[string]interface{}), "time")
 
 		if cmd.Flag("raw").Value.String() == "true" {
