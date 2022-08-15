@@ -157,7 +157,6 @@ var getCmd = &cobra.Command{
 				FetchedLatitude,
 				FetchedLongitude,
 				FetchedTimezone,
-				FetchedPopulation,
 				FetchedPopulationInt,
 				FetchedTemperature,
 				FetchedWindSpeed,
@@ -178,7 +177,6 @@ func printer(Name interface{},
 	Latitude interface{},
 	Longitude interface{},
 	Timezone interface{},
-	PopulationFloat interface{},
 	PopulationInt int64,
 	Temperature interface{},
 	WindSpeed interface{},
@@ -193,7 +191,7 @@ func printer(Name interface{},
 	fmt.Printf("Latitude: %f\n", Latitude)
 	fmt.Printf("Longitude: %f\n", Longitude)
 	fmt.Printf("Timezone: %s\n", Timezone)
-	fmt.Printf("Population: %s (%v)\n", humanize.Comma(PopulationInt), PopulationFloat)
+	fmt.Printf("Population: %s\n", humanize.Comma(PopulationInt))
 	fmt.Println("\nWeather Info:")
 	fmt.Printf("	Temperature: %.1f°C\n", Temperature)
 	fmt.Printf("	Wind Direction: %.0f°\n", WindDirection)
