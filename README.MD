@@ -31,7 +31,7 @@
 ## Building 🔨
 * If you don't want to manually build the app, you can use:
   * The [weather-cli](https://aur.archlinux.org/packages/weather-cli) AUR if you're on Arch
-  * Grab a binary from the [Artifacts](https://github.com/Rayrsn/Weather-Cli/actions/runs/2855792914)
+  * Grab a binary from the [Artifacts](https://github.com/Rayrsn/Weather-Cli/actions/runs/2861757821)
 
 Otherwise, you can build the program yourself by running:
 
