@@ -1,9 +1,9 @@
-module github.com/Rayrsn/weather-Cli
+module github.com/Rayrsn/Weather-Cli
 
 go 1.18
 
 require (
-	github.com/dustin/go-humanize v1.0.0
+	github.com/dustin/go-humanize v1.0.1
 	github.com/spf13/cobra v1.5.0
 )
 

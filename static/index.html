@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Weather App</title>
+</head>
+<body>
+  <h2>🌤 Weather App</h2>
+  <form id="searchForm">
+    <input type="text" id="city" placeholder="Enter city">
+    <button type="submit">Search</button>
+  </form>
+  <button onclick="getLiveWeather()">Get Live Location Weather</button>
+  <pre id="output"></pre>
+
+  <script>
+    async function fetchWeather(url) {
+      const res = await fetch(url);
+      const data = await res.json();
+      document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+    }
+
+    document.getElementById("searchForm").onsubmit = function(e) {
+      e.preventDefault();
+      const city = document.getElementById("city").value;
+      fetchWeather("/weather?city=" + city);
+    }
+
+    function getLiveWeather() {
+      fetchWeather("/weather");
+    }
+  </script>
+</body>
+</html>

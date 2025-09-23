@@ -16,6 +16,8 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/spf13/cobra"
+	"github.com/Rayrsn/Weather-Cli/utils"
+
 )
 
 var GeocodingUrl = "https://geocoding-api.open-meteo.com/v1/search"
@@ -27,12 +29,23 @@ var getCmd = &cobra.Command{
 	Short: "Gets the weather for a city",
 	Long:  `Gets the weather info for a city. (Can be used with --raw to get a json response)`,
 	Run: func(cmd *cobra.Command, args []string) {
+		var CityName string
+
+		// Auto-detect location if no args
 		if len(args) == 0 {
-			fmt.Println("Please enter a city name")
-			os.Exit(1)
+			loc, _, _, err := utils.GetCurrentLocation()
+			if err != nil {
+				fmt.Println("Error detecting location:", err)
+				os.Exit(1)
+			}
+			fmt.Println("Auto-detected location:", loc)
+			CityName = loc
+		} else {
+			// Use provided city
+			CityName = args[0]
 		}
-		var CityNameFormatted = strings.Replace(args[0], " ", "%20", -1)
-		var CityName = args[0]
+
+		var CityNameFormatted = strings.Replace(CityName, " ", "%20", -1)
 
 		if cmd.Flag("raw").Value.String() == "false" {
 			fmt.Printf("Searching for city %s...\n\n", strings.ToUpper(CityName[:1])+CityName[1:])
@@ -262,7 +275,6 @@ func translateweathercode(code string) string {
 		return "Thunderstorm With Light Hail"
 	case "99":
 		return "Thunderstorm With Heavy Hail"
-
 	default:
 		return "Unknown"
 	}
@@ -270,6 +282,5 @@ func translateweathercode(code string) string {
 
 func init() {
 	rootCmd.AddCommand(getCmd)
-
 	getCmd.Flags().BoolP("raw", "r", false, "Get raw data")
 }
