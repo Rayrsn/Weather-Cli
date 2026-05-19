@@ -80,6 +80,12 @@ var getCmd = &cobra.Command{
 		}
 		isImperial := units == "imperial"
 
+		// Get forecast preference
+		showForecast, _ := cmd.Flags().GetBool("forecast")
+		if !showForecast {
+			showForecast = viper.GetBool("forecast")
+		}
+
 		var forecastData ForecastResponse
 		var airqualityData AirQualityResponse
 		var wg sync.WaitGroup
@@ -89,6 +95,9 @@ var getCmd = &cobra.Command{
 		go func() {
 			defer wg.Done()
 			forecastUrl := ForecastUrl + "?timezone=auto" + "&latitude=" + fmt.Sprintf("%.4f", FetchedLatitude) + "&longitude=" + fmt.Sprintf("%.4f", FetchedLongitude) + "&current_weather=true" + "&hourly=relativehumidity_2m,apparent_temperature,surface_pressure,pressure_msl"
+			if showForecast {
+				forecastUrl += "&daily=temperature_2m_max,temperature_2m_min,weathercode,sunrise,sunset,uv_index_max,precipitation_sum,windspeed_10m_max,winddirection_10m_dominant"
+			}
 			if isImperial {
 				forecastUrl += "&temperature_unit=fahrenheit&windspeed_unit=mph"
 			}
@@ -183,9 +192,7 @@ var getCmd = &cobra.Command{
 				FetchedLongitude,
 				FetchedTimezone,
 				FetchedPopulationInt,
-				forecastData.CurrentWeather.Temperature,
-				forecastData.CurrentWeather.Windspeed,
-				forecastData.CurrentWeather.Winddirection,
+				forecastData,
 				translateweathercode(fmt.Sprintf("%v", forecastData.CurrentWeather.Weathercode)),
 				FetchedHumidityCurrent,
 				FetchedRealFeelCurrent,
@@ -194,6 +201,7 @@ var getCmd = &cobra.Command{
 				FetchedUVIndexMax,
 				!noStyle,
 				isImperial,
+				showForecast,
 			)
 		}
 		return nil
@@ -226,6 +234,18 @@ type ForecastResponse struct {
 		SurfacePressure     []float64 `json:"surface_pressure"`
 		PressureMsl         []float64 `json:"pressure_msl"`
 	} `json:"hourly"`
+	Daily struct {
+		Time               []string  `json:"time"`
+		Temperature2MMax   []float64 `json:"temperature_2m_max"`
+		Temperature2MMin   []float64 `json:"temperature_2m_min"`
+		Weathercode        []float64 `json:"weathercode"`
+		Sunrise            []string  `json:"sunrise"`
+		Sunset             []string  `json:"sunset"`
+		UvIndexMax         []float64 `json:"uv_index_max"`
+		PrecipitationSum   []float64 `json:"precipitation_sum"`
+		Windspeed10MMax    []float64 `json:"windspeed_10m_max"`
+		Winddirection10MDo []float64 `json:"winddirection_10m_dominant"`
+	} `json:"daily"`
 }
 
 type AirQualityResponse struct {
@@ -246,9 +266,7 @@ func printer(Name interface{},
 	Longitude interface{},
 	Timezone interface{},
 	PopulationInt int64,
-	Temperature interface{},
-	WindSpeed interface{},
-	WindDirection interface{},
+	forecastData ForecastResponse,
 	WeatherCode string,
 	HumidityCurrent float64,
 	RealFeelCurrent float64,
@@ -256,7 +274,8 @@ func printer(Name interface{},
 	SealevelPressureCurrent float64,
 	UVIndexMax float64,
 	styled bool,
-	isImperial bool) {
+	isImperial bool,
+	showForecast bool) {
 
 	tempUnit := "°C"
 	windUnit := "Km/h"
@@ -272,15 +291,27 @@ func printer(Name interface{},
 		fmt.Printf("Timezone: %s\n", Timezone)
 		fmt.Printf("Population: %s\n", humanize.Comma(PopulationInt))
 		fmt.Println("\nWeather Info:")
-		fmt.Printf("	Temperature: %.1f%s\n", Temperature, tempUnit)
-		fmt.Printf("	Wind Direction: %.0f°\n", WindDirection)
-		fmt.Printf("	Wind Speed: %.1f %s\n", WindSpeed, windUnit)
+		fmt.Printf("	Temperature: %.1f%s\n", forecastData.CurrentWeather.Temperature, tempUnit)
+		fmt.Printf("	Wind Direction: %.0f°\n", forecastData.CurrentWeather.Winddirection)
+		fmt.Printf("	Wind Speed: %.1f %s\n", forecastData.CurrentWeather.Windspeed, windUnit)
 		fmt.Printf("	Weather Condition: %s\n", WeatherCode)
 		fmt.Printf("	Humidity: %.2f%%\n", HumidityCurrent)
 		fmt.Printf("	Real Feel: %.1f%s\n", RealFeelCurrent, tempUnit)
 		fmt.Printf("	Surface Pressure: %.2f hPa\n", SurfacePressureCurrent)
 		fmt.Printf("	Sealevel Pressure: %.2f hPa\n", SealevelPressureCurrent)
 		fmt.Printf("	UV Index: %.0f\n", math.Round(UVIndexMax))
+
+		if showForecast && len(forecastData.Daily.Time) > 0 {
+			fmt.Println("\n7-Day Forecast:")
+			for i := 0; i < len(forecastData.Daily.Time); i++ {
+				fmt.Printf("	%s: %.1f%s / %.1f%s - %s\n",
+					forecastData.Daily.Time[i],
+					forecastData.Daily.Temperature2MMax[i], tempUnit,
+					forecastData.Daily.Temperature2MMin[i], tempUnit,
+					translateweathercode(fmt.Sprintf("%.0f", forecastData.Daily.Weathercode[i])),
+				)
+			}
+		}
 		return
 	}
 
@@ -304,10 +335,10 @@ func printer(Name interface{},
 		Padding(1).
 		Margin(1)
 
-	rowStyle := lipgloss.NewStyle().Width(50)
+	rowStyle := lipgloss.NewStyle().Width(60)
 
 	renderRow := func(label, value string) string {
-		l := labelStyle.Width(25).Render(label)
+		l := labelStyle.Width(30).Render(label)
 		v := valueStyle.Render(value)
 		return rowStyle.Render(l + v)
 	}
@@ -321,8 +352,8 @@ func printer(Name interface{},
 	)
 
 	weatherInfo := lipgloss.JoinVertical(lipgloss.Left,
-		renderRow("🔥 Temp:", fmt.Sprintf("%.1f%s", Temperature, tempUnit)),
-		renderRow("💨 Wind:", fmt.Sprintf("%.1f %s (%.0f°)", WindSpeed, windUnit, WindDirection)),
+		renderRow("🔥 Temp:", fmt.Sprintf("%.1f%s", forecastData.CurrentWeather.Temperature, tempUnit)),
+		renderRow("💨 Wind:", fmt.Sprintf("%.1f %s (%.0f°)", forecastData.CurrentWeather.Windspeed, windUnit, forecastData.CurrentWeather.Winddirection)),
 		renderRow("⛅ Condition:", WeatherCode),
 		renderRow("💧 Humidity:", fmt.Sprintf("%.1f%%", HumidityCurrent)),
 		renderRow("🔥 Feels Like:", fmt.Sprintf("%.1f%s", RealFeelCurrent, tempUnit)),
@@ -338,6 +369,26 @@ func printer(Name interface{},
 		titleStyle.Render("CURRENT CONDITIONS"),
 		weatherInfo,
 	)
+
+	if showForecast && len(forecastData.Daily.Time) > 0 {
+		forecastTitle := titleStyle.MarginTop(1).Render("7-DAY FORECAST")
+		var forecastRows []string
+		for i := 0; i < len(forecastData.Daily.Time); i++ {
+			date, _ := time.Parse("2006-01-02", forecastData.Daily.Time[i])
+			dateStr := date.Format("Mon, Jan 02")
+			
+			condition := translateweathercode(fmt.Sprintf("%.0f", forecastData.Daily.Weathercode[i]))
+			tempRange := fmt.Sprintf("%.1f/%.1f%s", forecastData.Daily.Temperature2MMax[i], forecastData.Daily.Temperature2MMin[i], tempUnit)
+			
+			row := renderRow("🗓️  "+dateStr+":", fmt.Sprintf("%-15s %s", tempRange, condition))
+			forecastRows = append(forecastRows, row)
+		}
+		content = lipgloss.JoinVertical(lipgloss.Left,
+			content,
+			forecastTitle,
+			lipgloss.JoinVertical(lipgloss.Left, forecastRows...),
+		)
+	}
 
 	fmt.Println(containerStyle.Render(content))
 }
@@ -412,4 +463,5 @@ func init() {
 	getCmd.Flags().BoolP("raw", "r", false, "Get raw data")
 	getCmd.Flags().Bool("no-style", false, "Disable styled output")
 	getCmd.Flags().StringP("units", "u", "metric", "Units to use (metric or imperial)")
+	getCmd.Flags().BoolP("forecast", "f", false, "Show 7-day forecast")
 }
