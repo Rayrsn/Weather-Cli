@@ -27,7 +27,7 @@ func NewClient() *Client {
 }
 
 func (c *Client) GetCityInfo(cityName string) (*GeocodingResponse, error) {
-	cityinfoUrl := fmt.Sprintf("%s?name=%s&count=1", c.GeocodingUrl, url.QueryEscape(cityName))
+	cityinfoUrl := fmt.Sprintf("%s?name=%s&count=10", c.GeocodingUrl, url.QueryEscape(cityName))
 	resp, err := c.HttpClient.Get(cityinfoUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to reach geocoding API: %w", err)
@@ -91,4 +91,25 @@ func (c *Client) GetAirQuality(lat, lon float64) (*AirQualityResponse, error) {
 	}
 
 	return &data, nil
+}
+
+func (c *Client) GetAutoLocation() (string, error) {
+	resp, err := c.HttpClient.Get("http://ip-api.com/json/")
+	if err != nil {
+		return "", fmt.Errorf("failed to reach geolocation API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var data struct {
+		City string `json:"city"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return "", fmt.Errorf("failed to decode geolocation response: %w", err)
+	}
+
+	if data.City == "" {
+		return "", fmt.Errorf("could not determine city from IP")
+	}
+
+	return data.City, nil
 }

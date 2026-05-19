@@ -7,13 +7,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/Rayrsn/weather-Cli/internal/api"
 	"github.com/Rayrsn/weather-Cli/internal/ui"
-	"github.com/charmbracelet/lipgloss"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -23,34 +22,75 @@ var getCmd = &cobra.Command{
 	Short: "Gets the weather for a city",
 	Long:  `Gets the weather info for a city. (Can be used with --raw to get a json response)`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		client := api.NewClient()
 		var cityName string
 		if len(args) == 0 {
 			cityName = viper.GetString("default_city")
 			if cityName == "" {
-				return fmt.Errorf("please enter a city name or set a default_city in your config")
+				// Try auto-location
+				var err error
+				cityName, err = client.GetAutoLocation()
+				if err != nil {
+					return fmt.Errorf("please enter a city name or set a default_city in your config (auto-location failed: %v)", err)
+				}
 			}
 		} else {
 			cityName = args[0]
 		}
 
 		raw, _ := cmd.Flags().GetBool("raw")
+		
+		var cityinfoData *api.GeocodingResponse
 		if !raw {
-			searchStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#00D7FF")).Bold(true)
-			fmt.Printf("%s\n\n", searchStyle.Render(fmt.Sprintf("🔍 Searching for city %s...", strings.ToUpper(cityName[:1])+cityName[1:])))
-		}
+			loader := ui.NewLoadingModel(fmt.Sprintf("Searching for city %s", cityName))
+			p := tea.NewProgram(loader)
+			
+			go func() {
+				var err error
+				cityinfoData, err = client.GetCityInfo(cityName)
+				if err != nil {
+					p.Send(err)
+					return
+				}
+				p.Send(true)
+			}()
 
-		client := api.NewClient()
-
-		cityinfoData, err := client.GetCityInfo(cityName)
-		if err != nil {
-			return err
+			if _, err := p.Run(); err != nil {
+				return fmt.Errorf("loading error: %w", err)
+			}
+			if cityinfoData == nil {
+				return fmt.Errorf("city lookup failed for: %s", cityName)
+			}
+		} else {
+			var err error
+			cityinfoData, err = client.GetCityInfo(cityName)
+			if err != nil {
+				return err
+			}
 		}
 
 		if len(cityinfoData.Results) == 0 {
-			return fmt.Errorf("city not found: %s", cityName)
+			return fmt.Errorf("city not found: %s. Please check the spelling or try a more specific name (e.g., 'London, UK')", cityName)
 		}
 
-		result := cityinfoData.Results[0]
+		noList, _ := cmd.Flags().GetBool("no-list")
+		interactive := !noList
+		
+		// If flag wasn't used, check config
+		if !cmd.Flags().Changed("no-list") && viper.IsSet("interactive") {
+			interactive = viper.GetBool("interactive")
+		}
+
+		var result *api.GeocodingResult
+		if len(cityinfoData.Results) > 1 && !raw && interactive {
+			var err error
+			result, err = ui.SelectCity(cityinfoData.Results)
+			if err != nil {
+				return err
+			}
+		} else {
+			result = &cityinfoData.Results[0]
+		}
 
 		// Get units preference
 		units, _ := cmd.Flags().GetString("units")
@@ -67,34 +107,82 @@ var getCmd = &cobra.Command{
 
 		var forecastData *api.ForecastResponse
 		var airqualityData *api.AirQualityResponse
-		var wg sync.WaitGroup
-		errChan := make(chan error, 2)
 
-		wg.Add(2)
-		go func() {
-			defer wg.Done()
-			var err error
-			forecastData, err = client.GetForecast(result.Latitude, result.Longitude, isImperial, showForecast)
-			if err != nil {
-				errChan <- err
+		if !raw {
+			loader := ui.NewLoadingModel(fmt.Sprintf("Fetching weather data for %s", result.Name))
+			p := tea.NewProgram(loader)
+
+			go func() {
+				var wg sync.WaitGroup
+				errChan := make(chan error, 2)
+
+				wg.Add(2)
+				go func() {
+					defer wg.Done()
+					var err error
+					forecastData, err = client.GetForecast(result.Latitude, result.Longitude, isImperial, showForecast)
+					if err != nil {
+						errChan <- err
+					}
+				}()
+
+				go func() {
+					defer wg.Done()
+					var err error
+					airqualityData, err = client.GetAirQuality(result.Latitude, result.Longitude)
+					if err != nil {
+						errChan <- err
+					}
+				}()
+
+				wg.Wait()
+				close(errChan)
+
+				for err := range errChan {
+					if err != nil {
+						p.Send(err)
+						return
+					}
+				}
+				p.Send(true)
+			}()
+
+			if _, err := p.Run(); err != nil {
+				return fmt.Errorf("loading error: %w", err)
 			}
-		}()
-
-		go func() {
-			defer wg.Done()
-			var err error
-			airqualityData, err = client.GetAirQuality(result.Latitude, result.Longitude)
-			if err != nil {
-				errChan <- err
+			if forecastData == nil || airqualityData == nil {
+				return fmt.Errorf("failed to fetch weather or air quality data")
 			}
-		}()
+		} else {
+			var wg sync.WaitGroup
+			errChan := make(chan error, 2)
 
-		wg.Wait()
-		close(errChan)
+			wg.Add(2)
+			go func() {
+				defer wg.Done()
+				var err error
+				forecastData, err = client.GetForecast(result.Latitude, result.Longitude, isImperial, showForecast)
+				if err != nil {
+					errChan <- err
+				}
+			}()
 
-		for err := range errChan {
-			if err != nil {
-				return err
+			go func() {
+				defer wg.Done()
+				var err error
+				airqualityData, err = client.GetAirQuality(result.Latitude, result.Longitude)
+				if err != nil {
+					errChan <- err
+				}
+			}()
+
+			wg.Wait()
+			close(errChan)
+
+			for err := range errChan {
+				if err != nil {
+					return err
+				}
 			}
 		}
 
@@ -119,7 +207,7 @@ var getCmd = &cobra.Command{
 
 		if raw {
 			combined := api.CombinedResponse{
-				Location:   result,
+				Location:   *result,
 				Forecast:   *forecastData,
 				AirQuality: *airqualityData,
 			}
@@ -164,4 +252,5 @@ func init() {
 	getCmd.Flags().Bool("no-style", false, "Disable styled output")
 	getCmd.Flags().StringP("units", "u", "metric", "Units to use (metric or imperial)")
 	getCmd.Flags().BoolP("forecast", "f", false, "Show 7-day forecast")
+	getCmd.Flags().BoolP("no-list", "l", false, "Disable interactive city selection")
 }
