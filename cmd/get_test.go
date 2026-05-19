@@ -1,6 +1,10 @@
 package cmd
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/Rayrsn/weather-Cli/internal/ui"
+)
 
 func TestTranslateweathercode(t *testing.T) {
 	tests := []struct {
@@ -40,9 +44,9 @@ func TestTranslateweathercode(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		result := translateweathercode(tt.code)
+		result := ui.TranslateWeatherCode(tt.code)
 		if result != tt.expected {
-			t.Errorf("translateweathercode(%s) = %s; want %s", tt.code, result, tt.expected)
+			t.Errorf("TranslateWeatherCode(%s) = %s; want %s", tt.code, result, tt.expected)
 		}
 	}
 }
