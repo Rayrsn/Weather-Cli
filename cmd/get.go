@@ -6,7 +6,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"math"
 	"net/http"
 	"os"
@@ -25,10 +24,9 @@ var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Gets the weather for a city",
 	Long:  `Gets the weather info for a city. (Can be used with --raw to get a json response)`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
-			fmt.Println("Please enter a city name")
-			os.Exit(1)
+			return fmt.Errorf("please enter a city name")
 		}
 		var CityNameFormatted = strings.Replace(args[0], " ", "%20", -1)
 		var CityName = args[0]
@@ -40,13 +38,21 @@ var getCmd = &cobra.Command{
 
 		resp, err := http.Get(cityinfoUrl)
 		if err != nil {
-			log.Fatalln(err)
+			return fmt.Errorf("failed to reach geocoding API: %w", err)
 		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("geocoding API returned status: %s", resp.Status)
+		}
+
 		var cityinfoData GeocodingResponse
-		json.NewDecoder(resp.Body).Decode(&cityinfoData)
+		if err := json.NewDecoder(resp.Body).Decode(&cityinfoData); err != nil {
+			return fmt.Errorf("failed to decode geocoding response: %w", err)
+		}
 
 		if len(cityinfoData.Results) == 0 {
-			log.Fatalln("City not found")
+			return fmt.Errorf("city not found: %s", CityName)
 		}
 
 		result := cityinfoData.Results[0]
@@ -60,13 +66,25 @@ var getCmd = &cobra.Command{
 		forecastUrl := ForecastUrl + "?timezone=auto" + "&latitude=" + fmt.Sprintf("%.4f", FetchedLatitude) + "&longitude=" + fmt.Sprintf("%.4f", FetchedLongitude) + "&current_weather=true" + "&hourly=relativehumidity_2m,apparent_temperature,surface_pressure,pressure_msl"
 		resp, err = http.Get(forecastUrl)
 		if err != nil {
-			log.Fatalln(err)
+			return fmt.Errorf("failed to reach forecast API: %w", err)
 		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("forecast API returned status: %s", resp.Status)
+		}
+
 		var forecastData ForecastResponse
-		json.NewDecoder(resp.Body).Decode(&forecastData)
+		if err := json.NewDecoder(resp.Body).Decode(&forecastData); err != nil {
+			return fmt.Errorf("failed to decode forecast response: %w", err)
+		}
 
 		// Get the current values for the day (using current hour as index)
 		currentHour := time.Now().Hour()
+		if currentHour >= len(forecastData.Hourly.Relativehumidity2M) {
+			return fmt.Errorf("forecast data not available for the current hour")
+		}
+
 		var FetchedHumidityCurrent = forecastData.Hourly.Relativehumidity2M[currentHour]
 		var FetchedRealFeelCurrent = forecastData.Hourly.ApparentTemperature[currentHour]
 		var FetchedSurfacePressureCurrent = forecastData.Hourly.SurfacePressure[currentHour]
@@ -75,10 +93,18 @@ var getCmd = &cobra.Command{
 		airqualityUrl := AirQualityUrl + "?timezone=auto" + "&latitude=" + fmt.Sprintf("%.4f", FetchedLatitude) + "&longitude=" + fmt.Sprintf("%.4f", FetchedLongitude) + "&hourly=uv_index"
 		resp, err = http.Get(airqualityUrl)
 		if err != nil {
-			log.Fatalln(err)
+			return fmt.Errorf("failed to reach air quality API: %w", err)
 		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("air quality API returned status: %s", resp.Status)
+		}
+
 		var airqualityData AirQualityResponse
-		json.NewDecoder(resp.Body).Decode(&airqualityData)
+		if err := json.NewDecoder(resp.Body).Decode(&airqualityData); err != nil {
+			return fmt.Errorf("failed to decode air quality response: %w", err)
+		}
 
 		// Get maximum UV index
 		var FetchedUVIndexMax float64
@@ -91,21 +117,21 @@ var getCmd = &cobra.Command{
 		if cmd.Flag("raw").Value.String() == "true" {
 			jsn, err := json.Marshal(result)
 			if err != nil {
-				log.Fatalln(err)
+				return fmt.Errorf("failed to marshal city data: %w", err)
 			}
 			os.Stdout.Write(jsn)
 			fmt.Println()
 
 			jsn, err = json.Marshal(forecastData)
 			if err != nil {
-				log.Fatalln(err)
+				return fmt.Errorf("failed to marshal forecast data: %w", err)
 			}
 			os.Stdout.Write(jsn)
 			fmt.Println()
 
 			jsn, err = json.Marshal(airqualityData)
 			if err != nil {
-				log.Fatalln(err)
+				return fmt.Errorf("failed to marshal air quality data: %w", err)
 			}
 			os.Stdout.Write(jsn)
 		} else {
@@ -126,6 +152,7 @@ var getCmd = &cobra.Command{
 				FetchedUVIndexMax,
 			)
 		}
+		return nil
 	},
 }
 
