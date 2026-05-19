@@ -7,12 +7,14 @@ jobs:
   build-lin:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-go@v3
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: 'go.mod'
     - name: Build-lin
       run: go build -x -v 
     - name: Upload Release
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Linux
         path: ./weather-Cli
@@ -20,27 +22,30 @@ jobs:
   build-win: 
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-go@v3
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: 'go.mod'
     - name: Build-win
       run: go build -x -v 
     - name: Upload Release
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Windows
         path: ./weather-Cli.exe
 
 
   build-mac:
-    runs-on: macos-11
+    runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-go@v3
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: 'go.mod'
     - name: Build-mac
       run: go build -x -v 
     - name: Upload Release
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: MacOS
         path: ./weather-Cli
-

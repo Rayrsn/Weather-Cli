@@ -12,14 +12,16 @@
 </div>
 
 ## Features 🏆
-* **Modern UI:** Beautiful, styled terminal output with emojis and colors using `lipgloss`.
-* **Extended Forecast:** View a detailed 7-day outlook with the `--forecast` flag.
-* **Global Support:** Geocoding for any city worldwide with full URL encoding support.
-* **Unit Toggles:** Switch between `metric` (Celsius, Km/h) and `imperial` (Fahrenheit, mph).
-* **High Performance:** Parallel API calls using Go routines for near-instant results.
-* **Configuration:** Set a default city and preferred units in a config file.
+* **Modern UI:** Beautiful, styled terminal output with ASCII icons and colors using `lipgloss`.
+* **Theming:** Choose between `vibrant`, `dark`, and `light` themes.
+* **Extended Forecasts:** View a detailed 7-day outlook (`--forecast`) or a 24-hour breakdown (`--hourly`).
+* **Interactive Selection:** Easily pick from multiple city results when names are ambiguous.
+* **Auto-Location:** Automatically detect your current city using IP geolocation.
+* **Caching:** Built-in 15-minute caching for near-instant repeat lookups.
+* **Multi-City Support:** Query multiple cities in a single command.
+* **Exporting:** Save weather reports to `JSON`, `CSV`, or `Markdown`.
+* **Configuration CLI:** Manage your preferences directly through the tool.
 * **Automation-Friendly:** Unified `--raw` JSON output for piping into tools like `jq`.
-* **Reliable:** Struct-based API parsing and robust error handling.
 
 ## Building 🔨
 ### Manual Build
@@ -40,48 +42,61 @@ go build -o weather-Cli
 ./weather-Cli get London
 ```
 
-### Get 7-Day Forecast
+### Get Multiple Cities
 ```bash
-./weather-Cli get Paris --forecast
+./weather-Cli get London Tokyo "New York"
 ```
 
-### Use Imperial Units
+### Hourly and Extended Forecasts
 ```bash
-./weather-Cli get "New York" --units imperial
+./weather-Cli get Paris --hourly --forecast
 ```
 
-### Raw JSON Output
+### Exporting Data
 ```bash
-./weather-Cli get Tokyo --raw | jq .
+./weather-Cli get London --output markdown --output-file report.md
 ```
 
-### Disable Styling (Plain Text)
+### Use Imperial Units & Different Themes
 ```bash
-./weather-Cli get London --no-style
+./weather-Cli get "New York" --units imperial --theme dark
 ```
 
 ## Configuration ⚙️
-You can create a configuration file at `$HOME/.weather-cli.yaml` to set your preferences:
+You can manage your configuration using the `config` command:
 
-```yaml
-default_city: London
-units: metric
-no_style: false
+```bash
+# Set a default city
+./weather-Cli config set default_city "Amsterdam"
+
+# Disable interactive selection
+./weather-Cli config set interactive false
+
+# Set default units
+./weather-Cli config set units imperial
 ```
+
+The configuration is stored at `$HOME/.weather-cli.yaml`.
 
 ## Flags 🚩
 | Flag | Shorthand | Description |
 | :--- | :--- | :--- |
 | `--forecast` | `-f` | Show 7-day extended forecast |
+| `--hourly` | `-H` | Show 24-hour detailed forecast |
 | `--units` | `-u` | Units to use (`metric` or `imperial`) |
-| `--raw` | `-r` | Output valid, unified JSON |
+| `--theme` | `-t` | Theme to use (`vibrant`, `dark`, `light`) |
+| `--output` | `-o` | Export format (`json`, `csv`, `markdown`) |
+| `--output-file` | | Path to save the exported data |
+| `--no-list` | `-l` | Disable interactive city selection |
+| `--no-cache` | | Disable local caching |
 | `--no-style` | | Disable styled terminal visuals |
+| `--raw` | `-r` | Output valid, unified JSON |
 | `--config` | | Path to a custom config file |
 | `--version` | `-v` | Print version number |
 
 ## Acknowledgments 📚
 * API used: [Open-Meteo](https://open-meteo.com/)
-* Built with: [Cobra](https://github.com/spf13/cobra), [Viper](https://github.com/spf13/viper), and [Lipgloss](https://github.com/charmbracelet/lipgloss).
+* Built with: [Cobra](https://github.com/spf13/cobra), [Viper](https://github.com/spf13/viper), [Lipgloss](https://github.com/charmbracelet/lipgloss), and [Bubble Tea](https://github.com/charmbracelet/bubbletea).
 
 ## Questions ⁉️
 ### If you have any questions or just want to talk, add me on [Discord](https://rayrsn.me/LinkInBio) or use my username **Rayr#6401**.
