@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
@@ -72,20 +73,61 @@ var getCmd = &cobra.Command{
 		var FetchedTimezone = result.Timezone
 		var FetchedPopulationInt = int64(result.Population)
 
-		forecastUrl := ForecastUrl + "?timezone=auto" + "&latitude=" + fmt.Sprintf("%.4f", FetchedLatitude) + "&longitude=" + fmt.Sprintf("%.4f", FetchedLongitude) + "&current_weather=true" + "&hourly=relativehumidity_2m,apparent_temperature,surface_pressure,pressure_msl"
-		resp, err = http.Get(forecastUrl)
-		if err != nil {
-			return fmt.Errorf("failed to reach forecast API: %w", err)
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("forecast API returned status: %s", resp.Status)
-		}
-
 		var forecastData ForecastResponse
-		if err := json.NewDecoder(resp.Body).Decode(&forecastData); err != nil {
-			return fmt.Errorf("failed to decode forecast response: %w", err)
+		var airqualityData AirQualityResponse
+		var wg sync.WaitGroup
+		errChan := make(chan error, 2)
+
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			forecastUrl := ForecastUrl + "?timezone=auto" + "&latitude=" + fmt.Sprintf("%.4f", FetchedLatitude) + "&longitude=" + fmt.Sprintf("%.4f", FetchedLongitude) + "&current_weather=true" + "&hourly=relativehumidity_2m,apparent_temperature,surface_pressure,pressure_msl"
+			resp, err := http.Get(forecastUrl)
+			if err != nil {
+				errChan <- fmt.Errorf("failed to reach forecast API: %w", err)
+				return
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				errChan <- fmt.Errorf("forecast API returned status: %s", resp.Status)
+				return
+			}
+
+			if err := json.NewDecoder(resp.Body).Decode(&forecastData); err != nil {
+				errChan <- fmt.Errorf("failed to decode forecast response: %w", err)
+				return
+			}
+		}()
+
+		go func() {
+			defer wg.Done()
+			airqualityUrl := AirQualityUrl + "?timezone=auto" + "&latitude=" + fmt.Sprintf("%.4f", FetchedLatitude) + "&longitude=" + fmt.Sprintf("%.4f", FetchedLongitude) + "&hourly=uv_index"
+			resp, err := http.Get(airqualityUrl)
+			if err != nil {
+				errChan <- fmt.Errorf("failed to reach air quality API: %w", err)
+				return
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				errChan <- fmt.Errorf("air quality API returned status: %s", resp.Status)
+				return
+			}
+
+			if err := json.NewDecoder(resp.Body).Decode(&airqualityData); err != nil {
+				errChan <- fmt.Errorf("failed to decode air quality response: %w", err)
+				return
+			}
+		}()
+
+		wg.Wait()
+		close(errChan)
+
+		for err := range errChan {
+			if err != nil {
+				return err
+			}
 		}
 
 		// Get the current values for the day (using current hour as index)
@@ -98,22 +140,6 @@ var getCmd = &cobra.Command{
 		var FetchedRealFeelCurrent = forecastData.Hourly.ApparentTemperature[currentHour]
 		var FetchedSurfacePressureCurrent = forecastData.Hourly.SurfacePressure[currentHour]
 		var FetchedSealevelPressureCurrent = forecastData.Hourly.PressureMsl[currentHour]
-
-		airqualityUrl := AirQualityUrl + "?timezone=auto" + "&latitude=" + fmt.Sprintf("%.4f", FetchedLatitude) + "&longitude=" + fmt.Sprintf("%.4f", FetchedLongitude) + "&hourly=uv_index"
-		resp, err = http.Get(airqualityUrl)
-		if err != nil {
-			return fmt.Errorf("failed to reach air quality API: %w", err)
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("air quality API returned status: %s", resp.Status)
-		}
-
-		var airqualityData AirQualityResponse
-		if err := json.NewDecoder(resp.Body).Decode(&airqualityData); err != nil {
-			return fmt.Errorf("failed to decode air quality response: %w", err)
-		}
 
 		// Get maximum UV index
 		var FetchedUVIndexMax float64
