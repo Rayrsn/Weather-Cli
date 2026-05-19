@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/dustin/go-humanize"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -39,7 +40,8 @@ var getCmd = &cobra.Command{
 		var CityNameFormatted = url.QueryEscape(CityName)
 
 		if cmd.Flag("raw").Value.String() == "false" {
-			fmt.Printf("Searching for city %s...\n\n", strings.ToUpper(CityName[:1])+CityName[1:])
+			searchStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#00D7FF")).Bold(true)
+			fmt.Printf("%s\n\n", searchStyle.Render(fmt.Sprintf("🔍 Searching for city %s...", strings.ToUpper(CityName[:1])+CityName[1:])))
 		}
 		cityinfoUrl := GeocodingUrl + "?name=" + CityNameFormatted + "&count=1"
 
@@ -134,6 +136,11 @@ var getCmd = &cobra.Command{
 			os.Stdout.Write(jsn)
 			fmt.Println()
 		} else {
+			noStyle, _ := cmd.Flags().GetBool("no-style")
+			if !noStyle {
+				noStyle = viper.GetBool("no_style")
+			}
+
 			printer(FetchedCityName,
 				FetchedCountryName,
 				FetchedLatitude,
@@ -149,6 +156,7 @@ var getCmd = &cobra.Command{
 				FetchedSurfacePressureCurrent,
 				FetchedSealevelPressureCurrent,
 				FetchedUVIndexMax,
+				!noStyle,
 			)
 		}
 		return nil
@@ -195,7 +203,6 @@ type CombinedResponse struct {
 	AirQuality AirQualityResponse `json:"air_quality"`
 }
 
-
 func printer(Name interface{},
 	Country interface{},
 	Latitude interface{},
@@ -210,22 +217,84 @@ func printer(Name interface{},
 	RealFeelCurrent float64,
 	SurfacePressureCurrent float64,
 	SealevelPressureCurrent float64,
-	UVIndexMax float64) {
-	fmt.Printf("City/Country: %s/%s\n", Name, Country)
-	fmt.Printf("Latitude: %f\n", Latitude)
-	fmt.Printf("Longitude: %f\n", Longitude)
-	fmt.Printf("Timezone: %s\n", Timezone)
-	fmt.Printf("Population: %s\n", humanize.Comma(PopulationInt))
-	fmt.Println("\nWeather Info:")
-	fmt.Printf("	Temperature: %.1f°C\n", Temperature)
-	fmt.Printf("	Wind Direction: %.0f°\n", WindDirection)
-	fmt.Printf("	Wind Speed: %.1f Km/h\n", WindSpeed)
-	fmt.Printf("	Weather Condition: %s\n", WeatherCode)
-	fmt.Printf("	Humidity: %.2f%%\n", HumidityCurrent)
-	fmt.Printf("	Real Feel: %.1f°C\n", RealFeelCurrent)
-	fmt.Printf("	Surface Pressure: %.2f hPa\n", SurfacePressureCurrent)
-	fmt.Printf("	Sealevel Pressure: %.2f hPa\n", SealevelPressureCurrent)
-	fmt.Printf("	UV Index: %v\n", math.Round(UVIndexMax))
+	UVIndexMax float64,
+	styled bool) {
+
+	if !styled {
+		fmt.Printf("City/Country: %s/%s\n", Name, Country)
+		fmt.Printf("Latitude: %f\n", Latitude)
+		fmt.Printf("Longitude: %f\n", Longitude)
+		fmt.Printf("Timezone: %s\n", Timezone)
+		fmt.Printf("Population: %s\n", humanize.Comma(PopulationInt))
+		fmt.Println("\nWeather Info:")
+		fmt.Printf("	Temperature: %.1f°C\n", Temperature)
+		fmt.Printf("	Wind Direction: %.0f°\n", WindDirection)
+		fmt.Printf("	Wind Speed: %.1f Km/h\n", WindSpeed)
+		fmt.Printf("	Weather Condition: %s\n", WeatherCode)
+		fmt.Printf("	Humidity: %.2f%%\n", HumidityCurrent)
+		fmt.Printf("	Real Feel: %.1f°C\n", RealFeelCurrent)
+		fmt.Printf("	Surface Pressure: %.2f hPa\n", SurfacePressureCurrent)
+		fmt.Printf("	Sealevel Pressure: %.2f hPa\n", SealevelPressureCurrent)
+		fmt.Printf("	UV Index: %.0f\n", math.Round(UVIndexMax))
+		return
+	}
+
+	titleStyle := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("#FAFAFA")).
+		Background(lipgloss.Color("#7D56F4")).
+		Padding(0, 1).
+		MarginBottom(1)
+
+	labelStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#04B575")).
+		Bold(true)
+
+	valueStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FAFAFA"))
+
+	containerStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#874BFD")).
+		Padding(1).
+		Margin(1)
+
+	rowStyle := lipgloss.NewStyle().Width(50)
+
+	renderRow := func(label, value string) string {
+		l := labelStyle.Width(25).Render(label)
+		v := valueStyle.Render(value)
+		return rowStyle.Render(l + v)
+	}
+
+	locationInfo := lipgloss.JoinVertical(lipgloss.Left,
+		renderRow("📍 Location:", fmt.Sprintf("%v, %v", Name, Country)),
+		renderRow("🌐 Latitude:", fmt.Sprintf("%v", Latitude)),
+		renderRow("🌐 Longitude:", fmt.Sprintf("%v", Longitude)),
+		renderRow("🕒 Timezone:", fmt.Sprintf("%s", Timezone)),
+		renderRow("👥 Population:", humanize.Comma(PopulationInt)),
+	)
+
+	weatherInfo := lipgloss.JoinVertical(lipgloss.Left,
+		renderRow("🔥 Temp:", fmt.Sprintf("%.1f°C", Temperature)),
+		renderRow("💨 Wind:", fmt.Sprintf("%.1f Km/h (%.0f°)", WindSpeed, WindDirection)),
+		renderRow("⛅ Condition:", WeatherCode),
+		renderRow("💧 Humidity:", fmt.Sprintf("%.1f%%", HumidityCurrent)),
+		renderRow("🔥 Feels Like:", fmt.Sprintf("%.1f°C", RealFeelCurrent)),
+		renderRow("🧭 Surface Pressure:", fmt.Sprintf("%.2f hPa", SurfacePressureCurrent)),
+		renderRow("🌊 Sealevel Pressure:", fmt.Sprintf("%.2f hPa", SealevelPressureCurrent)),
+		renderRow("🌞 UV Index:", fmt.Sprintf("%.0f", math.Round(UVIndexMax))),
+	)
+
+	content := lipgloss.JoinVertical(lipgloss.Left,
+		titleStyle.Render("WEATHER REPORT"),
+		locationInfo,
+		"",
+		titleStyle.Render("CURRENT CONDITIONS"),
+		weatherInfo,
+	)
+
+	fmt.Println(containerStyle.Render(content))
 }
 
 func translateweathercode(code string) string {
@@ -296,4 +365,5 @@ func init() {
 	rootCmd.AddCommand(getCmd)
 
 	getCmd.Flags().BoolP("raw", "r", false, "Get raw data")
+	getCmd.Flags().Bool("no-style", false, "Disable styled output")
 }
