@@ -1,7 +1,7 @@
 <div align="center">
   
 # `🌦 Weather-Cli`
-## **An app made to get weather information through the terminal**
+## **A modern, fast CLI tool for weather information**
 
 <p align="center">
   <img width=40% height=40% src="https://github.com/Rayrsn/Weather-Cli/raw/main/cloud.gif?raw=true" alt="cloud">
@@ -12,71 +12,76 @@
 </div>
 
 ## Features 🏆
-* Can show 
-  * Population 
-  * Latitude
-  * Longitude
-  * Weather
-    * Temperature
-    * Humidity
-    * Wind Speed
-    * Wind Direction
-    * Weather Conditions
-    * Feels Like Temperature (Apparent temperature based on a combination of factors e.g. humidity, wind speed, solar radiation, wind chill and air pressure)
-    * Surface Pressure
-    * Sealevel Pressure
-    * UV Index
-* Raw JSON output
+* **Modern UI:** Beautiful, styled terminal output with emojis and colors using `lipgloss`.
+* **Extended Forecast:** View a detailed 7-day outlook with the `--forecast` flag.
+* **Global Support:** Geocoding for any city worldwide with full URL encoding support.
+* **Unit Toggles:** Switch between `metric` (Celsius, Km/h) and `imperial` (Fahrenheit, mph).
+* **High Performance:** Parallel API calls using Go routines for near-instant results.
+* **Configuration:** Set a default city and preferred units in a config file.
+* **Automation-Friendly:** Unified `--raw` JSON output for piping into tools like `jq`.
+* **Reliable:** Struct-based API parsing and robust error handling.
 
 ## Building 🔨
-* If you don't want to manually build the app, you can use:
-  * The [weather-cli](https://aur.archlinux.org/packages/weather-cli) AUR if you're on Arch
-  * Grab a binary from the [Artifacts](https://github.com/Rayrsn/Weather-Cli/actions/runs/2861757821)
-
-Otherwise, you can build the program yourself by running:
-
-***Make sure you have Go installed***
+### Manual Build
+Make sure you have [Go](https://go.dev/) installed.
 
 ```bash
-go build
+go build -o weather-Cli
 ```
-* **The executable will be located in the same directory you ran the command from**
+
+### Pre-built Binaries & Packages
+* **Arch Linux:** Available in the [weather-cli](https://aur.archlinux.org/packages/weather-cli) AUR.
+* **Binaries:** You can grab a binary from the [Releases](https://github.com/Rayrsn/Weather-Cli/releases).
 
 ## Usage 💻
-* Example 1:
-```bash
-./weather-Cli get Tokyo
-__________________________
-Searching for city Tokyo...
 
-City/Country: Tokyo/Japan
-Latitude: 35.689500
-Longitude: 139.691710
-Timezone: Asia/Tokyo
-Population: 8,336,599
-
-Weather Info:
-        Temperature: 28.5°
-        Wind Direction: 168°
-        Wind Speed: 7.0 Km/h
-        Weather Condition: Partly Cloudy
-        Humidity: 50.00%
-        Real Feel: 39.1°
-        Surface Pressure: 999.60 hPa
-        Sealevel Pressure: 1004.00 hPa
-        UV Index: 6
-```
-* Example 2:
+### Get Weather for a City
 ```bash
-./weather-Cli get Tokyo --raw
-__________________________
-(Returns the same data but in JSON)
+./weather-Cli get London
 ```
 
-## Acknowledgments and FAQ 📚
-API used: [Open-Meteo](https://open-meteo.com/)
+### Get 7-Day Forecast
+```bash
+./weather-Cli get Paris --forecast
+```
 
-Built with: [Cobra](https://github.com/spf13/cobra)
+### Use Imperial Units
+```bash
+./weather-Cli get "New York" --units imperial
+```
+
+### Raw JSON Output
+```bash
+./weather-Cli get Tokyo --raw | jq .
+```
+
+### Disable Styling (Plain Text)
+```bash
+./weather-Cli get London --no-style
+```
+
+## Configuration ⚙️
+You can create a configuration file at `$HOME/.weather-cli.yaml` to set your preferences:
+
+```yaml
+default_city: London
+units: metric
+no_style: false
+```
+
+## Flags 🚩
+| Flag | Shorthand | Description |
+| :--- | :--- | :--- |
+| `--forecast` | `-f` | Show 7-day extended forecast |
+| `--units` | `-u` | Units to use (`metric` or `imperial`) |
+| `--raw` | `-r` | Output valid, unified JSON |
+| `--no-style` | | Disable styled terminal visuals |
+| `--config` | | Path to a custom config file |
+| `--version` | `-v` | Print version number |
+
+## Acknowledgments 📚
+* API used: [Open-Meteo](https://open-meteo.com/)
+* Built with: [Cobra](https://github.com/spf13/cobra), [Viper](https://github.com/spf13/viper), and [Lipgloss](https://github.com/charmbracelet/lipgloss).
 
 ## Questions ⁉️
-### If yall have any questions or just wanna talk, add me on [Discord](https://rayr.ml/LinkInBio) or use my username Rayr#6401 (this might change so it's better to just use the link)
+### If you have any questions or just want to talk, add me on [Discord](https://rayrsn.me/LinkInBio) or use my username **Rayr#6401**.
