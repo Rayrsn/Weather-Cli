@@ -10,7 +10,6 @@ import (
 	"math"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -43,99 +42,58 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalln(err)
 		}
-		var cityinfoData map[string]interface{}
+		var cityinfoData GeocodingResponse
 		json.NewDecoder(resp.Body).Decode(&cityinfoData)
-		var FetchedCityName = cityinfoData["results"].([]interface{})[0].(map[string]interface{})["name"]
-		var FetchedCountryName = cityinfoData["results"].([]interface{})[0].(map[string]interface{})["country"]
-		var FetchedLatitude = cityinfoData["results"].([]interface{})[0].(map[string]interface{})["latitude"]
-		var FetchedLongitude = cityinfoData["results"].([]interface{})[0].(map[string]interface{})["longitude"]
-		var FetchedTimezone = cityinfoData["results"].([]interface{})[0].(map[string]interface{})["timezone"]
-		var FetchedPopulation = cityinfoData["results"].([]interface{})[0].(map[string]interface{})["population"]
-		var FetchedPopulationString string
-		var FetchedPopulationFloat float64
-		var FetchedPopulationInt int64
 
-		if FetchedPopulation == nil {
-			FetchedPopulationInt = int64(0)
-		} else {
-			FetchedPopulationString = strconv.Itoa(int(FetchedPopulation.(float64)))
-			FetchedPopulationFloat, _ = strconv.ParseFloat(FetchedPopulationString, 64)
-			FetchedPopulationInt = int64(FetchedPopulationFloat)
+		if len(cityinfoData.Results) == 0 {
+			log.Fatalln("City not found")
 		}
+
+		result := cityinfoData.Results[0]
+		var FetchedCityName = result.Name
+		var FetchedCountryName = result.Country
+		var FetchedLatitude = result.Latitude
+		var FetchedLongitude = result.Longitude
+		var FetchedTimezone = result.Timezone
+		var FetchedPopulationInt = int64(result.Population)
 
 		forecastUrl := ForecastUrl + "?timezone=auto" + "&latitude=" + fmt.Sprintf("%.4f", FetchedLatitude) + "&longitude=" + fmt.Sprintf("%.4f", FetchedLongitude) + "&current_weather=true" + "&hourly=relativehumidity_2m,apparent_temperature,surface_pressure,pressure_msl"
 		resp, err = http.Get(forecastUrl)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		var forecastData map[string]interface{}
+		var forecastData ForecastResponse
 		json.NewDecoder(resp.Body).Decode(&forecastData)
-		var FetchedTemperature = forecastData["current_weather"].(map[string]interface{})["temperature"]
-		var FetchedWindSpeed = forecastData["current_weather"].(map[string]interface{})["windspeed"]
-		var FetchedWindDirection = forecastData["current_weather"].(map[string]interface{})["winddirection"]
-		var FetchedWeathercode = forecastData["current_weather"].(map[string]interface{})["weathercode"]
-		var FetchedHumidity = forecastData["hourly"].(map[string]interface{})["relativehumidity_2m"]
-		var FetchedRealFeel = forecastData["hourly"].(map[string]interface{})["apparent_temperature"]
-		var FetchedSurfacePressure = forecastData["hourly"].(map[string]interface{})["surface_pressure"]
-		var FetchedSealevelPressure = forecastData["hourly"].(map[string]interface{})["pressure_msl"]
 
-		// Get the current humidity for the day
-		var FetchedHumidityCurrent = FetchedHumidity.([]interface{})[time.Now().Hour()].(float64)
-
-		// Add FetchedHumidityCurrent to forecastData
-		forecastData["hourly"].(map[string]interface{})["relativehumidity_2m"] = FetchedHumidityCurrent
-
-		// Get the current feels-like temperature for the day
-		var FetchedRealFeelCurrent = FetchedRealFeel.([]interface{})[time.Now().Hour()].(float64)
-
-		// Add FetchedRealFeelCurrent to forecastData
-		forecastData["hourly"].(map[string]interface{})["apparent_temperature"] = FetchedRealFeelCurrent
-
-		// Get the current surface pressure for the day
-		var FetchedSurfacePressureCurrent = FetchedSurfacePressure.([]interface{})[time.Now().Hour()].(float64)
-
-		// Add FetchedSurfacePressureCurrent to forecastData
-		forecastData["hourly"].(map[string]interface{})["surface_pressure"] = FetchedSurfacePressureCurrent
-
-		// Get the current sealevel pressure for the day
-		var FetchedSealevelPressureCurrent = FetchedSealevelPressure.([]interface{})[time.Now().Hour()].(float64)
-
-		// Add FetchedSealevelPressureCurrent to forecastData
-		forecastData["hourly"].(map[string]interface{})["pressure_msl"] = FetchedSealevelPressureCurrent
-
-		// Remove time key from hourly
-		delete(forecastData["hourly"].(map[string]interface{}), "time")
+		// Get the current values for the day (using current hour as index)
+		currentHour := time.Now().Hour()
+		var FetchedHumidityCurrent = forecastData.Hourly.Relativehumidity2M[currentHour]
+		var FetchedRealFeelCurrent = forecastData.Hourly.ApparentTemperature[currentHour]
+		var FetchedSurfacePressureCurrent = forecastData.Hourly.SurfacePressure[currentHour]
+		var FetchedSealevelPressureCurrent = forecastData.Hourly.PressureMsl[currentHour]
 
 		airqualityUrl := AirQualityUrl + "?timezone=auto" + "&latitude=" + fmt.Sprintf("%.4f", FetchedLatitude) + "&longitude=" + fmt.Sprintf("%.4f", FetchedLongitude) + "&hourly=uv_index"
 		resp, err = http.Get(airqualityUrl)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		var airqualityData map[string]interface{}
+		var airqualityData AirQualityResponse
 		json.NewDecoder(resp.Body).Decode(&airqualityData)
-		var FetchedUVIndex = airqualityData["hourly"].(map[string]interface{})["uv_index"]
 
 		// Get maximum UV index
 		var FetchedUVIndexMax float64
-		for i := 0; i < 24; i++ {
-			if FetchedUVIndex.([]interface{})[i].(float64) > FetchedUVIndexMax {
-				FetchedUVIndexMax = FetchedUVIndex.([]interface{})[i].(float64)
+		for _, uv := range airqualityData.Hourly.UvIndex {
+			if uv > FetchedUVIndexMax {
+				FetchedUVIndexMax = uv
 			}
 		}
-		// Add FetchedUVIndexMax to airqualityData
-		airqualityData["hourly"].(map[string]interface{})["uv_index"] = FetchedUVIndexMax
-
-		// Remove time key from hourly
-		delete(airqualityData["hourly"].(map[string]interface{}), "time")
 
 		if cmd.Flag("raw").Value.String() == "true" {
-			// only print the first entry under "results"
-			jsn, err := json.Marshal(cityinfoData["results"].([]interface{})[0])
+			jsn, err := json.Marshal(result)
 			if err != nil {
 				log.Fatalln(err)
 			}
 			os.Stdout.Write(jsn)
-
 			fmt.Println()
 
 			jsn, err = json.Marshal(forecastData)
@@ -143,7 +101,6 @@ var getCmd = &cobra.Command{
 				log.Fatalln(err)
 			}
 			os.Stdout.Write(jsn)
-
 			fmt.Println()
 
 			jsn, err = json.Marshal(airqualityData)
@@ -158,10 +115,10 @@ var getCmd = &cobra.Command{
 				FetchedLongitude,
 				FetchedTimezone,
 				FetchedPopulationInt,
-				FetchedTemperature,
-				FetchedWindSpeed,
-				FetchedWindDirection,
-				translateweathercode(fmt.Sprintf("%v", FetchedWeathercode)),
+				forecastData.CurrentWeather.Temperature,
+				forecastData.CurrentWeather.Windspeed,
+				forecastData.CurrentWeather.Winddirection,
+				translateweathercode(fmt.Sprintf("%v", forecastData.CurrentWeather.Weathercode)),
 				FetchedHumidityCurrent,
 				FetchedRealFeelCurrent,
 				FetchedSurfacePressureCurrent,
@@ -171,6 +128,39 @@ var getCmd = &cobra.Command{
 		}
 	},
 }
+
+type GeocodingResponse struct {
+	Results []struct {
+		Name       string  `json:"name"`
+		Country    string  `json:"country"`
+		Latitude   float64 `json:"latitude"`
+		Longitude  float64 `json:"longitude"`
+		Timezone   string  `json:"timezone"`
+		Population float64 `json:"population"`
+	} `json:"results"`
+}
+
+type ForecastResponse struct {
+	CurrentWeather struct {
+		Temperature   float64 `json:"temperature"`
+		Windspeed     float64 `json:"windspeed"`
+		Winddirection float64 `json:"winddirection"`
+		Weathercode   float64 `json:"weathercode"`
+	} `json:"current_weather"`
+	Hourly struct {
+		Relativehumidity2M  []float64 `json:"relativehumidity_2m"`
+		ApparentTemperature []float64 `json:"apparent_temperature"`
+		SurfacePressure     []float64 `json:"surface_pressure"`
+		PressureMsl         []float64 `json:"pressure_msl"`
+	} `json:"hourly"`
+}
+
+type AirQualityResponse struct {
+	Hourly struct {
+		UvIndex []float64 `json:"uv_index"`
+	} `json:"hourly"`
+}
+
 
 func printer(Name interface{},
 	Country interface{},
