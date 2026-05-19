@@ -15,6 +15,7 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var GeocodingUrl = "https://geocoding-api.open-meteo.com/v1/search"
@@ -22,15 +23,20 @@ var ForecastUrl = "https://api.open-meteo.com/v1/forecast"
 var AirQualityUrl = "https://air-quality-api.open-meteo.com/v1/air-quality"
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get [city]",
 	Short: "Gets the weather for a city",
 	Long:  `Gets the weather info for a city. (Can be used with --raw to get a json response)`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		var CityName string
 		if len(args) == 0 {
-			return fmt.Errorf("please enter a city name")
+			CityName = viper.GetString("default_city")
+			if CityName == "" {
+				return fmt.Errorf("please enter a city name or set a default_city in your config")
+			}
+		} else {
+			CityName = args[0]
 		}
-		var CityNameFormatted = url.QueryEscape(args[0])
-		var CityName = args[0]
+		var CityNameFormatted = url.QueryEscape(CityName)
 
 		if cmd.Flag("raw").Value.String() == "false" {
 			fmt.Printf("Searching for city %s...\n\n", strings.ToUpper(CityName[:1])+CityName[1:])

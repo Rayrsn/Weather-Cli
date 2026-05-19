@@ -7,7 +7,10 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
+
+var cfgFile string
 
 var rootCmd = &cobra.Command{
 	Use:   "weather-Cli",
@@ -25,7 +28,29 @@ func Execute() {
 }
 
 func init() {
+	cobra.OnInitialize(initConfig)
+
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.weather-cli.yaml)")
+
 	rootCmd.Flags().BoolP("version", "v", false, "Print the version number")
 	rootCmd.SetVersionTemplate("Hey there, I'm version {{.Version}}")
+}
 
+func initConfig() {
+	if cfgFile != "" {
+		viper.SetConfigFile(cfgFile)
+	} else {
+		home, err := os.UserHomeDir()
+		cobra.CheckErr(err)
+
+		viper.AddConfigPath(home)
+		viper.SetConfigType("yaml")
+		viper.SetConfigName(".weather-cli")
+	}
+
+	viper.AutomaticEnv()
+
+	if err := viper.ReadInConfig(); err == nil {
+		// Quietly continue if config exists
+	}
 }
