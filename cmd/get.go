@@ -116,25 +116,17 @@ var getCmd = &cobra.Command{
 		}
 
 		if cmd.Flag("raw").Value.String() == "true" {
-			jsn, err := json.Marshal(result)
+			combined := CombinedResponse{
+				Location:   result,
+				Forecast:   forecastData,
+				AirQuality: airqualityData,
+			}
+			jsn, err := json.Marshal(combined)
 			if err != nil {
-				return fmt.Errorf("failed to marshal city data: %w", err)
+				return fmt.Errorf("failed to marshal combined data: %w", err)
 			}
 			os.Stdout.Write(jsn)
 			fmt.Println()
-
-			jsn, err = json.Marshal(forecastData)
-			if err != nil {
-				return fmt.Errorf("failed to marshal forecast data: %w", err)
-			}
-			os.Stdout.Write(jsn)
-			fmt.Println()
-
-			jsn, err = json.Marshal(airqualityData)
-			if err != nil {
-				return fmt.Errorf("failed to marshal air quality data: %w", err)
-			}
-			os.Stdout.Write(jsn)
 		} else {
 			printer(FetchedCityName,
 				FetchedCountryName,
@@ -157,15 +149,17 @@ var getCmd = &cobra.Command{
 	},
 }
 
+type GeocodingResult struct {
+	Name       string  `json:"name"`
+	Country    string  `json:"country"`
+	Latitude   float64 `json:"latitude"`
+	Longitude  float64 `json:"longitude"`
+	Timezone   string  `json:"timezone"`
+	Population float64 `json:"population"`
+}
+
 type GeocodingResponse struct {
-	Results []struct {
-		Name       string  `json:"name"`
-		Country    string  `json:"country"`
-		Latitude   float64 `json:"latitude"`
-		Longitude  float64 `json:"longitude"`
-		Timezone   string  `json:"timezone"`
-		Population float64 `json:"population"`
-	} `json:"results"`
+	Results []GeocodingResult `json:"results"`
 }
 
 type ForecastResponse struct {
@@ -187,6 +181,12 @@ type AirQualityResponse struct {
 	Hourly struct {
 		UvIndex []float64 `json:"uv_index"`
 	} `json:"hourly"`
+}
+
+type CombinedResponse struct {
+	Location   GeocodingResult    `json:"location"`
+	Forecast   ForecastResponse   `json:"forecast"`
+	AirQuality AirQualityResponse `json:"air_quality"`
 }
 
 
