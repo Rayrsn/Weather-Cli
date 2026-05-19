@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Rayrsn/weather-Cli/internal/api"
+	"github.com/Rayrsn/weather-Cli/internal/cache"
 	"github.com/Rayrsn/weather-Cli/internal/ui"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
@@ -39,12 +40,46 @@ var getCmd = &cobra.Command{
 		}
 
 		raw, _ := cmd.Flags().GetBool("raw")
-		
+		noCache, _ := cmd.Flags().GetBool("no-cache")
+
+		// Get units and forecast preference early for cache key
+		units, _ := cmd.Flags().GetString("units")
+		if units == "metric" && viper.GetString("units") != "" {
+			units = viper.GetString("units")
+		}
+		isImperial := units == "imperial"
+
+		showForecast, _ := cmd.Flags().GetBool("forecast")
+		if !showForecast {
+			showForecast = viper.GetBool("forecast")
+		}
+
+		// Try cache
+		var cacheStore *cache.Cache
+		var cacheKey string
+		if !noCache {
+			var err error
+			cacheStore, err = cache.NewCache()
+			if err == nil {
+				cacheKey = cache.GenerateKey(cityName, isImperial, showForecast)
+				if cachedData, ok := cacheStore.Get(cacheKey, 15*time.Minute); ok {
+					if raw {
+						jsn, _ := json.Marshal(cachedData)
+						os.Stdout.Write(jsn)
+						fmt.Println()
+					} else {
+						displayResults(cachedData.Location, &cachedData.Forecast, &cachedData.AirQuality, isImperial, showForecast, cmd)
+					}
+					return nil
+				}
+			}
+		}
+
 		var cityinfoData *api.GeocodingResponse
 		if !raw {
 			loader := ui.NewLoadingModel(fmt.Sprintf("Searching for city %s", cityName))
 			p := tea.NewProgram(loader)
-			
+
 			go func() {
 				var err error
 				cityinfoData, err = client.GetCityInfo(cityName)
@@ -75,7 +110,7 @@ var getCmd = &cobra.Command{
 
 		noList, _ := cmd.Flags().GetBool("no-list")
 		interactive := !noList
-		
+
 		// If flag wasn't used, check config
 		if !cmd.Flags().Changed("no-list") && viper.IsSet("interactive") {
 			interactive = viper.GetBool("interactive")
@@ -90,19 +125,6 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			result = &cityinfoData.Results[0]
-		}
-
-		// Get units preference
-		units, _ := cmd.Flags().GetString("units")
-		if units == "metric" && viper.GetString("units") != "" {
-			units = viper.GetString("units")
-		}
-		isImperial := units == "imperial"
-
-		// Get forecast preference
-		showForecast, _ := cmd.Flags().GetBool("forecast")
-		if !showForecast {
-			showForecast = viper.GetBool("forecast")
 		}
 
 		var forecastData *api.ForecastResponse
@@ -186,31 +208,18 @@ var getCmd = &cobra.Command{
 			}
 		}
 
-		// Get the current values for the day (using current hour as index)
-		currentHour := time.Now().Hour()
-		if currentHour >= len(forecastData.Hourly.Relativehumidity2M) {
-			return fmt.Errorf("forecast data not available for the current hour")
+		combined := api.CombinedResponse{
+			Location:   *result,
+			Forecast:   *forecastData,
+			AirQuality: *airqualityData,
 		}
 
-		humidityCurrent := forecastData.Hourly.Relativehumidity2M[currentHour]
-		realFeelCurrent := forecastData.Hourly.ApparentTemperature[currentHour]
-		surfacePressureCurrent := forecastData.Hourly.SurfacePressure[currentHour]
-		sealevelPressureCurrent := forecastData.Hourly.PressureMsl[currentHour]
-
-		// Get maximum UV index
-		var uvIndexMax float64
-		for _, uv := range airqualityData.Hourly.UvIndex {
-			if uv > uvIndexMax {
-				uvIndexMax = uv
-			}
+		// Save to cache
+		if cacheStore != nil {
+			cacheStore.Set(cacheKey, combined)
 		}
 
 		if raw {
-			combined := api.CombinedResponse{
-				Location:   *result,
-				Forecast:   *forecastData,
-				AirQuality: *airqualityData,
-			}
 			jsn, err := json.Marshal(combined)
 			if err != nil {
 				return fmt.Errorf("failed to marshal combined data: %w", err)
@@ -218,31 +227,58 @@ var getCmd = &cobra.Command{
 			os.Stdout.Write(jsn)
 			fmt.Println()
 		} else {
-			noStyle, _ := cmd.Flags().GetBool("no-style")
-			if !noStyle {
-				noStyle = viper.GetBool("no_style")
-			}
-
-			ui.Printer(result.Name,
-				result.Country,
-				result.Latitude,
-				result.Longitude,
-				result.Timezone,
-				int64(result.Population),
-				*forecastData,
-				ui.TranslateWeatherCode(fmt.Sprintf("%v", forecastData.CurrentWeather.Weathercode)),
-				humidityCurrent,
-				realFeelCurrent,
-				surfacePressureCurrent,
-				sealevelPressureCurrent,
-				uvIndexMax,
-				!noStyle,
-				isImperial,
-				showForecast,
-			)
+			displayResults(combined.Location, &combined.Forecast, &combined.AirQuality, isImperial, showForecast, cmd)
 		}
 		return nil
 	},
+}
+
+func displayResults(location api.GeocodingResult, forecast *api.ForecastResponse, airquality *api.AirQualityResponse, isImperial bool, showForecast bool, cmd *cobra.Command) {
+	currentHour := time.Now().Hour()
+	if currentHour >= len(forecast.Hourly.Relativehumidity2M) {
+		currentHour = len(forecast.Hourly.Relativehumidity2M) - 1
+	}
+
+	humidityCurrent := forecast.Hourly.Relativehumidity2M[currentHour]
+	realFeelCurrent := forecast.Hourly.ApparentTemperature[currentHour]
+	surfacePressureCurrent := forecast.Hourly.SurfacePressure[currentHour]
+	sealevelPressureCurrent := forecast.Hourly.PressureMsl[currentHour]
+
+	var uvIndexMax float64
+	for _, uv := range airquality.Hourly.UvIndex {
+		if uv > uvIndexMax {
+			uvIndexMax = uv
+		}
+	}
+
+	noStyle, _ := cmd.Flags().GetBool("no-style")
+	if !noStyle {
+		noStyle = viper.GetBool("no_style")
+	}
+
+	theme, _ := cmd.Flags().GetString("theme")
+	if theme == "vibrant" && viper.GetString("theme") != "" {
+		theme = viper.GetString("theme")
+	}
+
+	ui.Printer(location.Name,
+		location.Country,
+		location.Latitude,
+		location.Longitude,
+		location.Timezone,
+		int64(location.Population),
+		*forecast,
+		ui.TranslateWeatherCode(fmt.Sprintf("%v", forecast.CurrentWeather.Weathercode)),
+		humidityCurrent,
+		realFeelCurrent,
+		surfacePressureCurrent,
+		sealevelPressureCurrent,
+		uvIndexMax,
+		!noStyle,
+		isImperial,
+		showForecast,
+		theme,
+	)
 }
 
 func init() {
@@ -253,4 +289,6 @@ func init() {
 	getCmd.Flags().StringP("units", "u", "metric", "Units to use (metric or imperial)")
 	getCmd.Flags().BoolP("forecast", "f", false, "Show 7-day forecast")
 	getCmd.Flags().BoolP("no-list", "l", false, "Disable interactive city selection")
+	getCmd.Flags().Bool("no-cache", false, "Disable local caching")
+	getCmd.Flags().StringP("theme", "t", "vibrant", "Theme to use (vibrant, dark, light)")
 }

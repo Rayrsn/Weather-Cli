@@ -88,7 +88,8 @@ func Printer(name string,
 	uvIndexMax float64,
 	styled bool,
 	isImperial bool,
-	showForecast bool) {
+	showForecast bool,
+	themeName string) {
 
 	tempUnit := "°C"
 	windUnit := "Km/h"
@@ -128,25 +129,8 @@ func Printer(name string,
 		return
 	}
 
-	titleStyle := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("#FAFAFA")).
-		Background(lipgloss.Color("#7D56F4")).
-		Padding(0, 1).
-		MarginBottom(1)
-
-	labelStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#04B575")).
-		Bold(true)
-
-	valueStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FAFAFA"))
-
-	containerStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#874BFD")).
-		Padding(1).
-		Margin(1)
+	theme := GetTheme(themeName)
+	titleStyle, labelStyle, valueStyle, containerStyle := GetStyles(theme)
 
 	rowStyle := lipgloss.NewStyle().Width(60)
 
