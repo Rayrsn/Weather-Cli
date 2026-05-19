@@ -1,5 +1,5 @@
 /*
-Copyright © 2022 Rayr https://rayr.ml/LinkInBio/
+Copyright © 2026 Rayr https://rayrsn.me/LinkInBio
 */
 package cmd
 
