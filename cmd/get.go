@@ -73,6 +73,13 @@ var getCmd = &cobra.Command{
 		var FetchedTimezone = result.Timezone
 		var FetchedPopulationInt = int64(result.Population)
 
+		// Get units preference
+		units, _ := cmd.Flags().GetString("units")
+		if units == "metric" && viper.GetString("units") != "" {
+			units = viper.GetString("units")
+		}
+		isImperial := units == "imperial"
+
 		var forecastData ForecastResponse
 		var airqualityData AirQualityResponse
 		var wg sync.WaitGroup
@@ -82,6 +89,9 @@ var getCmd = &cobra.Command{
 		go func() {
 			defer wg.Done()
 			forecastUrl := ForecastUrl + "?timezone=auto" + "&latitude=" + fmt.Sprintf("%.4f", FetchedLatitude) + "&longitude=" + fmt.Sprintf("%.4f", FetchedLongitude) + "&current_weather=true" + "&hourly=relativehumidity_2m,apparent_temperature,surface_pressure,pressure_msl"
+			if isImperial {
+				forecastUrl += "&temperature_unit=fahrenheit&windspeed_unit=mph"
+			}
 			resp, err := http.Get(forecastUrl)
 			if err != nil {
 				errChan <- fmt.Errorf("failed to reach forecast API: %w", err)
@@ -183,6 +193,7 @@ var getCmd = &cobra.Command{
 				FetchedSealevelPressureCurrent,
 				FetchedUVIndexMax,
 				!noStyle,
+				isImperial,
 			)
 		}
 		return nil
@@ -244,7 +255,15 @@ func printer(Name interface{},
 	SurfacePressureCurrent float64,
 	SealevelPressureCurrent float64,
 	UVIndexMax float64,
-	styled bool) {
+	styled bool,
+	isImperial bool) {
+
+	tempUnit := "°C"
+	windUnit := "Km/h"
+	if isImperial {
+		tempUnit = "°F"
+		windUnit = "mph"
+	}
 
 	if !styled {
 		fmt.Printf("City/Country: %s/%s\n", Name, Country)
@@ -253,12 +272,12 @@ func printer(Name interface{},
 		fmt.Printf("Timezone: %s\n", Timezone)
 		fmt.Printf("Population: %s\n", humanize.Comma(PopulationInt))
 		fmt.Println("\nWeather Info:")
-		fmt.Printf("	Temperature: %.1f°C\n", Temperature)
+		fmt.Printf("	Temperature: %.1f%s\n", Temperature, tempUnit)
 		fmt.Printf("	Wind Direction: %.0f°\n", WindDirection)
-		fmt.Printf("	Wind Speed: %.1f Km/h\n", WindSpeed)
+		fmt.Printf("	Wind Speed: %.1f %s\n", WindSpeed, windUnit)
 		fmt.Printf("	Weather Condition: %s\n", WeatherCode)
 		fmt.Printf("	Humidity: %.2f%%\n", HumidityCurrent)
-		fmt.Printf("	Real Feel: %.1f°C\n", RealFeelCurrent)
+		fmt.Printf("	Real Feel: %.1f%s\n", RealFeelCurrent, tempUnit)
 		fmt.Printf("	Surface Pressure: %.2f hPa\n", SurfacePressureCurrent)
 		fmt.Printf("	Sealevel Pressure: %.2f hPa\n", SealevelPressureCurrent)
 		fmt.Printf("	UV Index: %.0f\n", math.Round(UVIndexMax))
@@ -302,11 +321,11 @@ func printer(Name interface{},
 	)
 
 	weatherInfo := lipgloss.JoinVertical(lipgloss.Left,
-		renderRow("🔥 Temp:", fmt.Sprintf("%.1f°C", Temperature)),
-		renderRow("💨 Wind:", fmt.Sprintf("%.1f Km/h (%.0f°)", WindSpeed, WindDirection)),
+		renderRow("🔥 Temp:", fmt.Sprintf("%.1f%s", Temperature, tempUnit)),
+		renderRow("💨 Wind:", fmt.Sprintf("%.1f %s (%.0f°)", WindSpeed, windUnit, WindDirection)),
 		renderRow("⛅ Condition:", WeatherCode),
 		renderRow("💧 Humidity:", fmt.Sprintf("%.1f%%", HumidityCurrent)),
-		renderRow("🔥 Feels Like:", fmt.Sprintf("%.1f°C", RealFeelCurrent)),
+		renderRow("🔥 Feels Like:", fmt.Sprintf("%.1f%s", RealFeelCurrent, tempUnit)),
 		renderRow("🧭 Surface Pressure:", fmt.Sprintf("%.2f hPa", SurfacePressureCurrent)),
 		renderRow("🌊 Sealevel Pressure:", fmt.Sprintf("%.2f hPa", SealevelPressureCurrent)),
 		renderRow("🌞 UV Index:", fmt.Sprintf("%.0f", math.Round(UVIndexMax))),
@@ -392,4 +411,5 @@ func init() {
 
 	getCmd.Flags().BoolP("raw", "r", false, "Get raw data")
 	getCmd.Flags().Bool("no-style", false, "Disable styled output")
+	getCmd.Flags().StringP("units", "u", "metric", "Units to use (metric or imperial)")
 }
