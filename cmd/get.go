@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -28,7 +29,7 @@ var getCmd = &cobra.Command{
 		if len(args) == 0 {
 			return fmt.Errorf("please enter a city name")
 		}
-		var CityNameFormatted = strings.Replace(args[0], " ", "%20", -1)
+		var CityNameFormatted = url.QueryEscape(args[0])
 		var CityName = args[0]
 
 		if cmd.Flag("raw").Value.String() == "false" {
