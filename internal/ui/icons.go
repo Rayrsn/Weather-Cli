@@ -52,7 +52,11 @@ func GetSmallIcon(code string) string {
 	case "1", "2":
 		return "🌤️"
 	case "3":
-		return "☁️"
+		// Using 'Sun Behind Large Cloud' (🌥️) which is rendered consistently 
+		// as an emoji and generally agrees on width across terminals.
+		// The standard Cloud emoji (☁️) causes a 1-space border misalignment 
+		// due to conflicts between go-runewidth and terminal renderers.
+		return "🌥️"
 	case "45", "48":
 		return "🌫️"
 	case "51", "53", "55", "56", "57":
@@ -60,7 +64,7 @@ func GetSmallIcon(code string) string {
 	case "61", "63", "65", "66", "67", "80", "81", "82":
 		return "🌧️"
 	case "71", "73", "75", "77", "85", "86":
-		return "❄️"
+		return "🌨️"
 	case "95", "96", "99":
 		return "⛈️"
 	default:
