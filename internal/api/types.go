@@ -21,8 +21,11 @@ type ForecastResponse struct {
 		Weathercode   float64 `json:"weathercode"`
 	} `json:"current_weather"`
 	Hourly struct {
+		Time                []string  `json:"time"`
+		Temperature2M       []float64 `json:"temperature_2m"`
 		Relativehumidity2M  []float64 `json:"relativehumidity_2m"`
 		ApparentTemperature []float64 `json:"apparent_temperature"`
+		Weathercode         []float64 `json:"weathercode"`
 		SurfacePressure     []float64 `json:"surface_pressure"`
 		PressureMsl         []float64 `json:"pressure_msl"`
 	} `json:"hourly"`

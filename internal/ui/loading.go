@@ -18,6 +18,10 @@ type LoadingModel struct {
 	Done     chan bool
 }
 
+func (m LoadingModel) Err() error {
+	return m.err
+}
+
 func NewLoadingModel(message string) LoadingModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot

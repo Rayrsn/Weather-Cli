@@ -89,6 +89,7 @@ func Printer(name string,
 	styled bool,
 	isImperial bool,
 	showForecast bool,
+	showHourly bool,
 	themeName string) {
 
 	tempUnit := "°C"
@@ -97,6 +98,8 @@ func Printer(name string,
 		tempUnit = "°F"
 		windUnit = "mph"
 	}
+
+	weatherCode := fmt.Sprintf("%.0f", forecastData.CurrentWeather.Weathercode)
 
 	if !styled {
 		fmt.Printf("City/Country: %s/%s\n", name, country)
@@ -108,21 +111,36 @@ func Printer(name string,
 		fmt.Printf("	Temperature: %.1f%s\n", forecastData.CurrentWeather.Temperature, tempUnit)
 		fmt.Printf("	Wind Direction: %.0f°\n", forecastData.CurrentWeather.Winddirection)
 		fmt.Printf("	Wind Speed: %.1f %s\n", forecastData.CurrentWeather.Windspeed, windUnit)
-		fmt.Printf("	Weather Condition: %s\n", weatherCondition)
+		fmt.Printf("	Weather Condition: %s %s\n", weatherCondition, GetSmallIcon(weatherCode))
 		fmt.Printf("	Humidity: %.2f%%\n", humidity)
 		fmt.Printf("	Real Feel: %.1f%s\n", realFeel, tempUnit)
 		fmt.Printf("	Surface Pressure: %.2f hPa\n", surfacePressure)
 		fmt.Printf("	Sealevel Pressure: %.2f hPa\n", sealevelPressure)
 		fmt.Printf("	UV Index: %.0f\n", math.Round(uvIndexMax))
 
+		if showHourly && len(forecastData.Hourly.Time) > 0 {
+			fmt.Println("\n24-Hour Forecast:")
+			currentHour := time.Now().Hour()
+			for i := currentHour; i < currentHour+24 && i < len(forecastData.Hourly.Time); i++ {
+				t, _ := time.Parse("2006-01-02T15:04", forecastData.Hourly.Time[i])
+				fmt.Printf("	%s: %.1f%s - %s %s\n",
+					t.Format("15:04"),
+					forecastData.Hourly.Temperature2M[i], tempUnit,
+					TranslateWeatherCode(fmt.Sprintf("%.0f", forecastData.Hourly.Weathercode[i])),
+					GetSmallIcon(fmt.Sprintf("%.0f", forecastData.Hourly.Weathercode[i])),
+				)
+			}
+		}
+
 		if showForecast && len(forecastData.Daily.Time) > 0 {
 			fmt.Println("\n7-Day Forecast:")
 			for i := 0; i < len(forecastData.Daily.Time); i++ {
-				fmt.Printf("	%s: %.1f%s / %.1f%s - %s\n",
+				fmt.Printf("	%s: %.1f%s / %.1f%s - %s %s\n",
 					forecastData.Daily.Time[i],
 					forecastData.Daily.Temperature2MMax[i], tempUnit,
 					forecastData.Daily.Temperature2MMin[i], tempUnit,
 					TranslateWeatherCode(fmt.Sprintf("%.0f", forecastData.Daily.Weathercode[i])),
+					GetSmallIcon(fmt.Sprintf("%.0f", forecastData.Daily.Weathercode[i])),
 				)
 			}
 		}
@@ -140,6 +158,9 @@ func Printer(name string,
 		return rowStyle.Render(l + v)
 	}
 
+	icon := GetWeatherIcon(weatherCode)
+	iconStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(theme.LabelForeground)).MarginRight(2)
+	
 	locationInfo := lipgloss.JoinVertical(lipgloss.Left,
 		renderRow("📍 Location:", fmt.Sprintf("%v, %v", name, country)),
 		renderRow("🌐 Latitude:", fmt.Sprintf("%v", latitude)),
@@ -151,7 +172,7 @@ func Printer(name string,
 	weatherInfo := lipgloss.JoinVertical(lipgloss.Left,
 		renderRow("🔥 Temp:", fmt.Sprintf("%.1f%s", forecastData.CurrentWeather.Temperature, tempUnit)),
 		renderRow("💨 Wind:", fmt.Sprintf("%.1f %s (%.0f°)", forecastData.CurrentWeather.Windspeed, windUnit, forecastData.CurrentWeather.Winddirection)),
-		renderRow("⛅ Condition:", weatherCondition),
+		renderRow("⛅ Condition:", weatherCondition+" "+GetSmallIcon(weatherCode)),
 		renderRow("💧 Humidity:", fmt.Sprintf("%.1f%%", humidity)),
 		renderRow("🔥 Feels Like:", fmt.Sprintf("%.1f%s", realFeel, tempUnit)),
 		renderRow("🧭 Surface Pressure:", fmt.Sprintf("%.2f hPa", surfacePressure)),
@@ -159,13 +180,40 @@ func Printer(name string,
 		renderRow("🌞 UV Index:", fmt.Sprintf("%.0f", math.Round(uvIndexMax))),
 	)
 
+	topContent := lipgloss.JoinHorizontal(lipgloss.Top,
+		iconStyle.Render(icon),
+		weatherInfo,
+	)
+
 	content := lipgloss.JoinVertical(lipgloss.Left,
 		titleStyle.Render("WEATHER REPORT"),
 		locationInfo,
 		"",
 		titleStyle.Render("CURRENT CONDITIONS"),
-		weatherInfo,
+		topContent,
 	)
+
+	if showHourly && len(forecastData.Hourly.Time) > 0 {
+		hourlyTitle := titleStyle.MarginTop(1).Render("24-HOUR FORECAST")
+		var hourlyRows []string
+		currentHour := time.Now().Hour()
+		for i := currentHour; i < currentHour+24 && i < len(forecastData.Hourly.Time); i++ {
+			t, _ := time.Parse("2006-01-02T15:04", forecastData.Hourly.Time[i])
+			timeStr := t.Format("15:04")
+			
+			condition := TranslateWeatherCode(fmt.Sprintf("%.0f", forecastData.Hourly.Weathercode[i]))
+			temp := fmt.Sprintf("%.1f%s", forecastData.Hourly.Temperature2M[i], tempUnit)
+			icon := GetSmallIcon(fmt.Sprintf("%.0f", forecastData.Hourly.Weathercode[i]))
+			
+			row := renderRow("🕒  "+timeStr+":", fmt.Sprintf("%-10s %s %s", temp, icon, condition))
+			hourlyRows = append(hourlyRows, row)
+		}
+		content = lipgloss.JoinVertical(lipgloss.Left,
+			content,
+			hourlyTitle,
+			lipgloss.JoinVertical(lipgloss.Left, hourlyRows...),
+		)
+	}
 
 	if showForecast && len(forecastData.Daily.Time) > 0 {
 		forecastTitle := titleStyle.MarginTop(1).Render("7-DAY FORECAST")

@@ -47,7 +47,7 @@ func (c *Client) GetCityInfo(cityName string) (*GeocodingResponse, error) {
 }
 
 func (c *Client) GetForecast(lat, lon float64, imperial bool, showForecast bool) (*ForecastResponse, error) {
-	forecastUrl := fmt.Sprintf("%s?timezone=auto&latitude=%.4f&longitude=%.4f&current_weather=true&hourly=relativehumidity_2m,apparent_temperature,surface_pressure,pressure_msl", c.ForecastUrl, lat, lon)
+	forecastUrl := fmt.Sprintf("%s?timezone=auto&latitude=%.4f&longitude=%.4f&current_weather=true&hourly=temperature_2m,weathercode,relativehumidity_2m,apparent_temperature,surface_pressure,pressure_msl", c.ForecastUrl, lat, lon)
 	if showForecast {
 		forecastUrl += "&daily=temperature_2m_max,temperature_2m_min,weathercode,sunrise,sunset,uv_index_max,precipitation_sum,windspeed_10m_max,winddirection_10m_dominant"
 	}
