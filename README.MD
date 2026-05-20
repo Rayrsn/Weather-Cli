@@ -62,6 +62,102 @@ go build -o weather-Cli
 ./weather-Cli get "New York" --units imperial --theme dark
 ```
 
+## Examples 📸
+
+### Standard Output
+```bash
+./weather-Cli get London
+```
+```text
+  ╭───────────────────────────────────────────────────────────────────────╮ 
+ │                                                                         │ 
+ │  WEATHER REPORT                                                         │ 
+ │                                                                         │ 
+ │ 📍 Location:                  London, United Kingdom                    │ 
+ │ 🌐 Latitude:                  51.50853                                  │ 
+ │ 🌐 Longitude:                 -0.12574                                  │ 
+ │ 🕒 Timezone:                  Europe/London                             │ 
+ │ 👥 Population:                8,961,989                                 │ 
+ │                                                                         │ 
+ │  CURRENT CONDITIONS                                                     │ 
+ │                                                                         │ 
+ │   \ _ /    🔥 Temp:                      15.6°C                         │ 
+ │  - ( )--o  💨 Wind:                      18.7 Km/h (250°)               │ 
+ │   / (___)  🌈 Condition:                 Partly Cloudy                  │ 
+ │            💧 Humidity:                  53.0%                          │ 
+ │            🔥 Feels Like:                14.3°C                         │ 
+ │            🧭 Surface Pressure:          1015.10 hPa                    │ 
+ │            🌊 Sealevel Pressure:         1017.80 hPa                    │ 
+ │            🌞 UV Index:                  6                              │ 
+ │                                                                         │ 
+ ╰────────────────────────────────────────────────────────────────────────╯ 
+```
+
+### 7-Day Forecast
+```bash
+./weather-Cli get London -f
+```
+```text
+ ╭────────────────────────────────────────────────────────────────────────╮ 
+ │                                                                         │ 
+ │  WEATHER REPORT                                                         │ 
+ │                                                                         │ 
+ │ 📍 Location:                  London, United Kingdom                    │ 
+ │ 🌐 Latitude:                  51.50853                                  │ 
+ │ 🌐 Longitude:                 -0.12574                                  │ 
+ │ 🕒 Timezone:                  Europe/London                             │ 
+ │ 👥 Population:                8,961,989                                 │ 
+ │                                                                         │ 
+ │  CURRENT CONDITIONS                                                     │ 
+ │                                                                         │ 
+ │   \ _ /    🔥 Temp:                      15.6°C                         │ 
+ │  - ( )--o  💨 Wind:                      18.7 Km/h (250°)               │ 
+ │   / (___)  🌈 Condition:                 Partly Cloudy                  │ 
+ │            💧 Humidity:                  53.0%                          │ 
+ │            🔥 Feels Like:                14.3°C                         │ 
+ │            🧭 Surface Pressure:          1015.10 hPa                    │ 
+ │            🌊 Sealevel Pressure:         1017.80 hPa                    │ 
+ │            🌞 UV Index:                  6                              │ 
+ │                                                                         │ 
+ │  7-DAY FORECAST                                                         │ 
+ │                                                                         │ 
+ │ 🗓️  Wed, May 20:              18.6/12.8°C     Light Drizzle             │ 
+ │ 🗓️  Thu, May 21:              22.8/12.3°C     Overcast                  │ 
+ │ 🗓️  Fri, May 22:              26.6/16.9°C     Overcast                  │ 
+ │ 🗓️  Sat, May 23:              26.9/19.6°C     Overcast                  │ 
+ │ 🗓️  Sun, May 24:              31.3/18.9°C     Clear Sky                 │ 
+ │ 🗓️  Mon, May 25:              29.0/20.9°C     Clear Sky                 │ 
+ │ 🗓️  Tue, May 26:              20.6/13.1°C     Clear Sky                 │ 
+ │                                                                         │ 
+ ╰────────────────────────────────────────────────────────────────────────╯
+```
+
+### Raw JSON Output (Automation-Friendly)
+```bash
+./weather-Cli get London --raw
+```
+```json
+{
+  "location": {
+    "name": "London",
+    "country": "United Kingdom",
+    "latitude": 51.50853,
+    "longitude": -0.12574,
+    "timezone": "Europe/London",
+    "population": 8961989
+  },
+  "forecast": {
+    "current_weather": {
+      "temperature": 15.6,
+      "windspeed": 18.7,
+      "winddirection": 250,
+      "weathercode": 2
+    },
+    ...
+  }
+}
+```
+
 ## Configuration ⚙️
 You can manage your configuration using the `config` command:
 
